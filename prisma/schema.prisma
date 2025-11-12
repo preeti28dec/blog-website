@@ -1,0 +1,74 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String?
+  email     String   @unique
+  password  String
+  role      String   @default("USER") // USER or ADMIN
+  posts     Post[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Category {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String   @unique
+  slug      String   @unique
+  posts     Post[]
+  createdAt DateTime @default(now())
+
+  @@map("categories")
+}
+
+model Post {
+  id         String     @id @default(auto()) @map("_id") @db.ObjectId
+  title      String
+  slug       String     @unique
+  content    String
+  excerpt    String?
+  published  Boolean    @default(false)
+  authorId   String     @db.ObjectId
+  author     User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  categoryId String?    @db.ObjectId
+  category   Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  tags       String     @default("") // Comma-separated tags
+  imageUrl   String?    // Cloudinary image URL
+  comments   Comment[]
+  views      Int        @default(0)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@index([published])
+  @@index([categoryId])
+  @@map("posts")
+}
+
+model Comment {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  content    String
+  authorName String
+  authorEmail String
+  postId     String   @db.ObjectId
+  post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  approved   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([postId])
+  @@index([approved])
+  @@map("comments")
+}
+
