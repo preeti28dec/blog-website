@@ -6,8 +6,9 @@ A modern, full-stack blogging website built with Next.js 14, TypeScript, Prisma,
 
 - **Frontend**: Next.js 14 with App Router, TypeScript, Tailwind CSS
 - **Backend**: Next.js API Routes with Prisma ORM
-- **Database**: SQLite (development) / PostgreSQL (production)
-- **Authentication**: User registration (NextAuth ready)
+- **Database**: MongoDB (MongoDB Atlas recommended for production)
+- **Authentication**: NextAuth.js with JWT strategy
+- **Image Upload**: Cloudinary integration
 - **Admin Panel**: Create, view, and delete blog posts
 - **Responsive Design**: Modern UI that works on all devices
 
@@ -30,18 +31,24 @@ npm install
 Create a `.env` file in the root directory:
 
 ```env
-# Database
-DATABASE_URL="file:./dev.db"
+# Database (MongoDB Atlas connection string)
+DATABASE_URL="mongodb+srv://username:password@cluster.mongodb.net/dbname?retryWrites=true&w=majority"
 
-# NextAuth (for production, generate a secure secret)
+# NextAuth Configuration
 NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="your-secret-key-here-change-in-production"
 
-# Cloudinary (for image uploads)
-# Get these from https://cloudinary.com/console
-CLOUDINARY_CLOUD_NAME="your-cloud-name"
-CLOUDINARY_API_KEY="your-api-key"
-CLOUDINARY_API_SECRET="your-api-secret"
+# JWT Secret (for custom auth endpoints)
+JWT_SECRET="your-jwt-secret-key-here"
+
+# Cloudinary Configuration (for image uploads)
+# Option 1: Use CLOUDINARY_URL (recommended)
+CLOUDINARY_URL="cloudinary://API_KEY:API_SECRET@CLOUD_NAME"
+
+# Option 2: Use individual variables
+# CLOUDINARY_CLOUD_NAME="your-cloud-name"
+# CLOUDINARY_API_KEY="your-api-key"
+# CLOUDINARY_API_SECRET="your-api-secret"
 
 # App
 NODE_ENV="development"
@@ -60,11 +67,19 @@ openssl rand -base64 32
 
 ### 3. Set Up Database
 
+**For MongoDB Atlas (Recommended):**
+1. Create a free account at [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
+2. Create a new cluster (free tier available)
+3. Create a database user and get your connection string
+4. Add your IP address to the Network Access whitelist (or use 0.0.0.0/0 for development)
+5. Copy your connection string and add it to `.env` as `DATABASE_URL`
+
+**Generate Prisma Client and Push Schema:**
 ```bash
 # Generate Prisma Client
 npm run db:generate
 
-# Push schema to database (creates database file)
+# Push schema to database
 npm run db:push
 ```
 
@@ -193,13 +208,84 @@ Blog-website/
 
 ## 🚀 Deployment Guide
 
-### Deploy to Vercel (Easiest)
+### Deploy to Vercel (Recommended)
 
+#### Prerequisites
 1. Push your code to GitHub
-2. Go to [vercel.com](https://vercel.com)
-3. Import your GitHub repository
-4. Add environment variables in Vercel dashboard
-5. Deploy!
+2. Have your MongoDB Atlas connection string ready
+3. Have your Cloudinary credentials ready
+4. Generate a secure `NEXTAUTH_SECRET`:
+   ```bash
+   openssl rand -base64 32
+   ```
+
+#### Step-by-Step Deployment
+
+1. **Go to Vercel**
+   - Visit [vercel.com](https://vercel.com)
+   - Sign up/Login with your GitHub account
+
+2. **Import Your Repository**
+   - Click "Add New Project"
+   - Select your GitHub repository
+   - Vercel will auto-detect Next.js
+
+3. **Configure Environment Variables**
+   In the Vercel dashboard, add these environment variables:
+   
+   **Required:**
+   - `DATABASE_URL` - Your MongoDB Atlas connection string
+   - `NEXTAUTH_URL` - Your Vercel deployment URL (e.g., `https://your-app.vercel.app`)
+   - `NEXTAUTH_SECRET` - A secure random string (use the one you generated)
+   - `JWT_SECRET` - A secure random string (can be same as NEXTAUTH_SECRET)
+   
+   **For Image Uploads:**
+   - `CLOUDINARY_URL` - Your Cloudinary connection string
+   - OR use individual variables:
+     - `CLOUDINARY_CLOUD_NAME`
+     - `CLOUDINARY_API_KEY`
+     - `CLOUDINARY_API_SECRET`
+
+4. **Deploy**
+   - Click "Deploy"
+   - Vercel will automatically:
+     - Run `npm install`
+     - Run `prisma generate` (via postinstall script)
+     - Run `npm run build`
+     - Deploy your application
+
+5. **Post-Deployment**
+   - After deployment, run database migrations:
+     ```bash
+     # Connect to your Vercel project via CLI or use MongoDB Atlas directly
+     npx prisma db push
+     ```
+   - Or use Prisma Studio locally with your production DATABASE_URL
+
+#### Important Notes for Vercel Deployment
+
+- **MongoDB Atlas Network Access**: Make sure to whitelist Vercel's IP addresses or use `0.0.0.0/0` (allow all IPs) for your MongoDB Atlas cluster
+- **NEXTAUTH_URL**: After first deployment, update this to your actual Vercel URL
+- **Build Time**: The build process includes Prisma client generation automatically
+- **Serverless Functions**: All API routes run as serverless functions on Vercel
+- **Environment Variables**: Never commit `.env` file - always use Vercel's environment variables dashboard
+
+#### Troubleshooting Vercel Deployment
+
+**Build Fails:**
+- Check that all environment variables are set
+- Verify `DATABASE_URL` format is correct
+- Check build logs for specific errors
+
+**Database Connection Issues:**
+- Verify MongoDB Atlas Network Access allows all IPs (0.0.0.0/0)
+- Check DATABASE_URL is correctly formatted
+- Ensure database user has proper permissions
+
+**NextAuth Not Working:**
+- Verify `NEXTAUTH_URL` matches your Vercel deployment URL
+- Ensure `NEXTAUTH_SECRET` is set
+- Check that callback URLs are correct
 
 ### Deploy to VPS
 
@@ -233,11 +319,23 @@ Blog-website/
 ## 🐛 Troubleshooting
 
 ### Database Issues
+
+**MongoDB Connection Issues:**
 ```bash
-# Reset database
-rm prisma/dev.db
+# Regenerate Prisma Client
+npm run db:generate
+
+# Push schema to database
 npm run db:push
+
+# Check connection
+npm run db:studio
 ```
+
+**Common MongoDB Atlas Issues:**
+- **Connection timeout**: Check Network Access whitelist in MongoDB Atlas
+- **Authentication failed**: Verify username and password in DATABASE_URL
+- **Database not found**: The database will be created automatically on first connection
 
 ### Port Already in Use
 ```bash

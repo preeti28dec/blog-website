@@ -23,6 +23,7 @@ interface Post {
   id: string;
   title: string;
   slug: string;
+  content?: string;
   excerpt: string | null;
   published: boolean;
   tags: string;
@@ -567,7 +568,7 @@ export default function AdminPage() {
                         </button>
                       </div>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Click "Change Image" to replace or drag and drop a new image
+                        Click &quot;Change Image&quot; to replace or drag and drop a new image
                       </p>
                     </div>
                   ) : (

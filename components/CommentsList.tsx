@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 interface Comment {
   id: string;
@@ -19,7 +19,7 @@ export default function CommentsList({ postSlug, postTitle, refreshTrigger }: Co
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchComments = async () => {
+  const fetchComments = useCallback(async () => {
     try {
       const response = await fetch(`/api/posts/${postSlug}/comments`);
       if (response.ok) {
@@ -31,11 +31,11 @@ export default function CommentsList({ postSlug, postTitle, refreshTrigger }: Co
     } finally {
       setLoading(false);
     }
-  };
+  }, [postSlug]);
 
   useEffect(() => {
     fetchComments();
-  }, [postSlug, refreshTrigger]);
+  }, [fetchComments, refreshTrigger]);
 
   if (loading) {
     return <div className="mt-8">Loading comments...</div>;

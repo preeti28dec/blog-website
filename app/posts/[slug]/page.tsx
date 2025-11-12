@@ -30,6 +30,13 @@ export async function generateMetadata({
               email: true,
             },
           },
+          category: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
         },
       });
     } catch (error) {

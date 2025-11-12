@@ -66,7 +66,7 @@ export default function ServicesPage() {
             Interested in working together?
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
-            Let's discuss your project and how I can help bring your ideas to life.
+            Let&apos;s discuss your project and how I can help bring your ideas to life.
           </p>
           <Link
             href="/contact"
