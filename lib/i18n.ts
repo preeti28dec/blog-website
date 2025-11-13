@@ -4,9 +4,6 @@ type TranslationDictionary = {
   };
   nav: {
     home: string;
-    skills: string;
-    projects: string;
-    services: string;
     contact: string;
     admin: string;
     toggleMenu: string;
@@ -20,11 +17,7 @@ type TranslationDictionary = {
     default: string;
   };
   menu: {
-    wallet: string;
-    bankAccounts: string;
-    orders: string;
     bookmarks: string;
-    walletAddress: string;
   };
   theme: {
     label: string;
@@ -45,9 +38,6 @@ export const translations = {
     },
     nav: {
       home: "Home",
-      skills: "My Skills",
-      projects: "Projects",
-      services: "Services",
       contact: "Contact",
       admin: "Admin",
       toggleMenu: "Toggle menu",
@@ -61,11 +51,7 @@ export const translations = {
       default: "User",
     },
     menu: {
-      wallet: "Wallet",
-      bankAccounts: "Bank Accounts",
-      orders: "My Orders",
       bookmarks: "Bookmarks",
-      walletAddress: "Wallet Address",
     },
     theme: {
       label: "Theme",
@@ -84,9 +70,6 @@ export const translations = {
     },
     nav: {
       home: "\u092E\u0941\u0916\u094D\u092F\u0020\u092A\u0943\u0937\u094D\u0920",
-      skills: "\u092E\u0947\u0930\u0940\u0020\u0915\u094D\u0937\u092E\u0924\u093E\u090F\u0901",
-      projects: "\u092A\u094D\u0930\u094B\u091C\u0947\u0915\u094D\u091F\u094D\u0938",
-      services: "\u0938\u0947\u0935\u093E\u090F\u0901",
       contact: "\u0938\u0902\u092A\u0930\u094D\u0915",
       admin: "\u092A\u094D\u0930\u0936\u093E\u0938\u0928",
       toggleMenu: "\u092E\u0947\u0928\u0942\u0020\u092C\u0926\u0932\u0947\u0902",
@@ -100,11 +83,7 @@ export const translations = {
       default: "\u0909\u092A\u092F\u094B\u0917\u0915\u0930\u094D\u0924\u093E",
     },
     menu: {
-      wallet: "\u0935\u0949\u0932\u0947\u091F",
-      bankAccounts: "\u092C\u0948\u0902\u0915\u0020\u0916\u093E\u0924\u0947",
-      orders: "\u092E\u0947\u0930\u0947\u0020\u0906\u0926\u0947\u0936",
       bookmarks: "\u092C\u0941\u0915\u092E\u093E\u0930\u094D\u0915",
-      walletAddress: "\u0935\u0949\u0932\u0947\u091F\u0020\u092A\u0924\u093E",
     },
     theme: {
       label: "\u0925\u0940\u092E",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, memo, useRef, useMemo } from "react";
+import React, { useState, useEffect, memo, useRef, useMemo } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
@@ -9,9 +9,6 @@ import {
   FaBars, 
   FaTimes, 
   FaSignOutAlt, 
-  FaWallet, 
-  FaCreditCard, 
-  FaBox, 
   FaBookmark,
   FaArrowRight
 } from "react-icons/fa";
@@ -80,32 +77,62 @@ const Navbar = memo(function Navbar() {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      // Don't close if clicking inside dropdown
+      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
         setUserDropdownOpen(false);
       }
     };
 
     if (userDropdownOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
+      // Use click event on bubble phase to allow button clicks to register first
+      document.addEventListener("click", handleClickOutside);
 
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+      return () => {
+        document.removeEventListener("click", handleClickOutside);
+      };
+    }
   }, [userDropdownOpen]);
 
-  const handleLogout = () => {
-    // Handle both NextAuth and JWT logout
-    if (session) {
-      signOut({ callbackUrl: "/login" });
-    } else {
-      authApi.logout();
-      setJwtUser(null);
-      router.push("/login");
-      router.refresh();
+  const handleLogout = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    try {
+      // Close menus first
+      setMobileMenuOpen(false);
+      setUserDropdownOpen(false);
+      
+      // Small delay to ensure dropdown closes before redirect
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Handle both NextAuth and JWT logout
+      if (session) {
+        // NextAuth logout
+        await signOut({ callbackUrl: "/login", redirect: true });
+      } else {
+        // JWT logout - clear token and state
+        authApi.logout();
+        setJwtUser(null);
+        
+        // Clear any remaining state
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("token");
+          // Force redirect to login page
+          window.location.href = "/login";
+        } else {
+          router.push("/login");
+          router.refresh();
+        }
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Fallback: clear everything and redirect
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+      }
     }
-    setMobileMenuOpen(false);
-    setUserDropdownOpen(false);
   };
 
   // Check if we have a token (even if user details not loaded yet)
@@ -123,17 +150,12 @@ const Navbar = memo(function Navbar() {
     return name[0].toUpperCase();
   };
 
-  // Generate wallet address (mock for now)
-  const walletAddress = "0xc136...6e1a";
   // Only show loading if we don't have a token yet
   const isLoading = status === "loading" || (loading && !hasToken && !jwtUser);
 
   const navLinks = useMemo(
     () => [
       { href: "/", label: t("nav.home") },
-      { href: "/skills", label: t("nav.skills") },
-      { href: "/projects", label: t("nav.projects") },
-      { href: "/services", label: t("nav.services") },
       { href: "/contact", label: t("nav.contact") },
     ],
     [t],
@@ -194,7 +216,7 @@ const Navbar = memo(function Navbar() {
 
                   {/* Dropdown Menu */}
                   {userDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-50">
+                    <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-50" style={{ pointerEvents: 'auto' }}>
                       {/* User Info */}
                       <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                         <div className="flex items-center gap-3">
@@ -215,33 +237,6 @@ const Navbar = memo(function Navbar() {
                       {/* Menu Items */}
                       <div className="py-2">
                         <Link
-                          href="/wallet"
-                          onClick={() => setUserDropdownOpen(false)}
-                          className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                        >
-                        <FaWallet className="text-gray-600 dark:text-gray-400" />
-                        <span className="text-gray-700 dark:text-gray-300">{t("menu.wallet")}</span>
-                        </Link>
-                        
-                        <Link
-                          href="/bank-accounts"
-                          onClick={() => setUserDropdownOpen(false)}
-                          className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                        >
-                        <FaCreditCard className="text-gray-600 dark:text-gray-400" />
-                        <span className="text-gray-700 dark:text-gray-300">{t("menu.bankAccounts")}</span>
-                        </Link>
-                        
-                        <Link
-                          href="/orders"
-                          onClick={() => setUserDropdownOpen(false)}
-                          className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                        >
-                        <FaBox className="text-gray-600 dark:text-gray-400" />
-                        <span className="text-gray-700 dark:text-gray-300">{t("menu.orders")}</span>
-                        </Link>
-                        
-                        <Link
                           href="/bookmarks"
                           onClick={() => setUserDropdownOpen(false)}
                           className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -249,27 +244,15 @@ const Navbar = memo(function Navbar() {
                         <FaBookmark className="text-gray-600 dark:text-gray-400" />
                         <span className="text-gray-700 dark:text-gray-300">{t("menu.bookmarks")}</span>
                         </Link>
-                        
-                        <Link
-                          href="/wallet"
-                          onClick={() => setUserDropdownOpen(false)}
-                          className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                        >
-                          <FaWallet className="text-gray-600 dark:text-gray-400" />
-                        <span
-                          className="text-gray-700 dark:text-gray-300 font-mono text-sm"
-                          title={t("menu.walletAddress")}
-                        >
-                          {walletAddress}
-                        </span>
-                        </Link>
                       </div>
 
                       {/* Logout */}
                       <div className="border-t border-gray-200 dark:border-gray-700 pt-2">
                         <button
+                          type="button"
                           onClick={handleLogout}
-                          className="w-full flex items-center justify-between px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                          className="w-full flex items-center justify-between px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer"
+                          style={{ pointerEvents: 'auto' }}
                         >
                         <span className="font-semibold">{t("auth.logout")}</span>
                           <FaArrowRight className="text-sm" />
@@ -326,7 +309,7 @@ const Navbar = memo(function Navbar() {
 
                   {/* Mobile Dropdown Menu */}
                   {userDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-50">
+                    <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-50" style={{ pointerEvents: 'auto' }}>
                       {/* User Info */}
                       <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                         <div className="flex items-center gap-3">
@@ -347,42 +330,6 @@ const Navbar = memo(function Navbar() {
                       {/* Menu Items */}
                       <div className="py-2">
                         <Link
-                          href="/wallet"
-                          onClick={() => {
-                            setUserDropdownOpen(false);
-                            setMobileMenuOpen(false);
-                          }}
-                          className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                        >
-                        <FaWallet className="text-gray-600 dark:text-gray-400" />
-                        <span className="text-gray-700 dark:text-gray-300">{t("menu.wallet")}</span>
-                        </Link>
-                        
-                        <Link
-                          href="/bank-accounts"
-                          onClick={() => {
-                            setUserDropdownOpen(false);
-                            setMobileMenuOpen(false);
-                          }}
-                          className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                        >
-                        <FaCreditCard className="text-gray-600 dark:text-gray-400" />
-                        <span className="text-gray-700 dark:text-gray-300">{t("menu.bankAccounts")}</span>
-                        </Link>
-                        
-                        <Link
-                          href="/orders"
-                          onClick={() => {
-                            setUserDropdownOpen(false);
-                            setMobileMenuOpen(false);
-                          }}
-                          className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                        >
-                        <FaBox className="text-gray-600 dark:text-gray-400" />
-                        <span className="text-gray-700 dark:text-gray-300">{t("menu.orders")}</span>
-                        </Link>
-                        
-                        <Link
                           href="/bookmarks"
                           onClick={() => {
                             setUserDropdownOpen(false);
@@ -393,30 +340,15 @@ const Navbar = memo(function Navbar() {
                         <FaBookmark className="text-gray-600 dark:text-gray-400" />
                         <span className="text-gray-700 dark:text-gray-300">{t("menu.bookmarks")}</span>
                         </Link>
-                        
-                        <Link
-                          href="/wallet"
-                          onClick={() => {
-                            setUserDropdownOpen(false);
-                            setMobileMenuOpen(false);
-                          }}
-                          className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                        >
-                          <FaWallet className="text-gray-600 dark:text-gray-400" />
-                        <span
-                          className="text-gray-700 dark:text-gray-300 font-mono text-sm"
-                          title={t("menu.walletAddress")}
-                        >
-                          {walletAddress}
-                        </span>
-                        </Link>
                       </div>
 
                       {/* Logout */}
                       <div className="border-t border-gray-200 dark:border-gray-700 pt-2">
                         <button
+                          type="button"
                           onClick={handleLogout}
-                          className="w-full flex items-center justify-between px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                          className="w-full flex items-center justify-between px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer"
+                          style={{ pointerEvents: 'auto' }}
                         >
                         <span className="font-semibold">{t("auth.logout")}</span>
                           <FaArrowRight className="text-sm" />
@@ -489,8 +421,10 @@ const Navbar = memo(function Navbar() {
                   {user?.name || user?.email}
                 </div>
                 <button
+                  type="button"
                   onClick={handleLogout}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold cursor-pointer"
+                  style={{ pointerEvents: 'auto' }}
                 >
                   <FaSignOutAlt />
                   {t("auth.logout")}

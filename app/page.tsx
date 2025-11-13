@@ -17,13 +17,6 @@ export default async function Home({
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-4xl font-bold mb-4 text-center">
-          Welcome to Our Blog
-        </h1>
-        <p className="text-xl text-gray-600 dark:text-gray-400 mb-8 text-center">
-          Discover amazing articles and stories
-        </p>
-
         <CategoryFilter categories={categories} currentCategory={searchParams.category} />
 
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 mt-8">
