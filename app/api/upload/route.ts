@@ -10,18 +10,7 @@ export async function POST(request: NextRequest) {
                               !!process.env.CLOUDINARY_API_KEY && 
                               !!process.env.CLOUDINARY_API_SECRET;
     
-    if (!hasCloudinaryUrl && !hasIndividualVars) {
-      console.error('Cloudinary configuration missing:', {
-        cloudinary_url: hasCloudinaryUrl,
-        cloud_name: !!process.env.CLOUDINARY_CLOUD_NAME,
-        api_key: !!process.env.CLOUDINARY_API_KEY,
-        api_secret: !!process.env.CLOUDINARY_API_SECRET,
-      });
-      return NextResponse.json(
-        { error: 'Image upload service is not configured. Please contact the administrator.' },
-        { status: 500 }
-      );
-    }
+    const isCloudinaryConfigured = hasCloudinaryUrl || hasIndividualVars;
 
     // Authentication check removed - allowing public image uploads
 
@@ -56,14 +45,28 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Upload to Cloudinary
-    console.log('Attempting to upload image to Cloudinary...');
-    const result = await uploadImage(buffer, 'blog-images');
-    console.log('Image uploaded successfully:', result.secure_url);
+    // Try to upload to Cloudinary if configured, otherwise use base64 fallback
+    if (isCloudinaryConfigured) {
+      try {
+        // Upload to Cloudinary
+        const result = await uploadImage(buffer, 'blog-images');
+        return NextResponse.json({
+          url: result.secure_url,
+          publicId: result.public_id,
+        });
+      } catch (cloudinaryError: any) {
+        console.warn('Cloudinary upload failed, falling back to base64:', cloudinaryError.message);
+        // Fall through to base64 fallback
+      }
+    }
+
+    const base64 = buffer.toString('base64');
+    const mimeType = file.type || 'image/jpeg';
+    const dataUrl = `data:${mimeType};base64,${base64}`;
 
     return NextResponse.json({
-      url: result.secure_url,
-      publicId: result.public_id,
+      url: dataUrl,
+      publicId: null, // No public ID for base64 images
     });
   } catch (error: any) {
     console.error('Upload error:', error);
