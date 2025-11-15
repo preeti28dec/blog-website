@@ -10,7 +10,7 @@ const updatePostSchema = z.object({
   categoryId: z.string().optional(),
   tags: z.string().optional(),
   imageUrl: z.string().nullable().optional(),
-  editToken: z.string().optional(), // Edit token to verify ownership
+  editToken: z.string().optional(), // No longer required, kept for backward compatibility
 });
 
 // GET single post by slug
@@ -61,7 +61,7 @@ export async function GET(
   }
 }
 
-// PUT update post (requires edit token for public posts)
+// PUT update post
 export async function PUT(
   request: NextRequest,
   { params }: { params: { slug: string } }
@@ -79,21 +79,7 @@ export async function PUT(
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
-    // Check if user has permission to edit
-    // For public posts (no authorId), require edit token
-    if (!existingPost.authorId) {
-      if (!validatedData.editToken || validatedData.editToken !== existingPost.editToken) {
-        return NextResponse.json({ error: "Invalid edit token. You can only edit posts you created." }, { status: 403 });
-      }
-    } else {
-      // For posts with authorId (legacy authenticated posts), still require edit token or skip for now
-      // In a full migration, you might want to handle this differently
-      if (!validatedData.editToken || validatedData.editToken !== existingPost.editToken) {
-        return NextResponse.json({ error: "Invalid edit token. You can only edit posts you created." }, { status: 403 });
-      }
-    }
-
-    // Remove editToken from update data (it's only for verification)
+    // Remove editToken from update data (no longer needed)
     const { editToken, ...updateData } = validatedData;
 
     // Type updateData to allow slug property
@@ -152,26 +138,18 @@ export async function PUT(
   }
 }
 
-// DELETE post (requires edit token)
+// DELETE post
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { slug: string } }
 ) {
   try {
-    const body = await request.json().catch(() => ({}));
-    const { editToken } = body;
-
     const post = await prisma.post.findUnique({
       where: { slug: params.slug },
     });
 
     if (!post) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
-    }
-
-    // Check edit token
-    if (!editToken || editToken !== post.editToken) {
-      return NextResponse.json({ error: "Invalid edit token. You can only delete posts you created." }, { status: 403 });
     }
 
     await prisma.post.delete({

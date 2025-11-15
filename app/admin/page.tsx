@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import toast from "react-hot-toast";
 
 const postSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -64,6 +65,7 @@ export default function AdminPage() {
   const [uploadingFileName, setUploadingFileName] = useState("");
   const [createdEditToken, setCreatedEditToken] = useState<string | null>(null);
   const [createdPostSlug, setCreatedPostSlug] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -187,6 +189,7 @@ export default function AdminPage() {
   };
 
   const onSubmit = async (data: any) => {
+    setIsSubmitting(true);
     try {
       const url = editingPost
         ? `/api/posts/${editingPost.slug}`
@@ -211,16 +214,7 @@ export default function AdminPage() {
       console.log('Submitting post with data:', postData); // Debug log
       console.log('ImageUrl state:', imageUrl); // Debug log
 
-      // If editing, add edit token from localStorage
-      if (editingPost) {
-        const editToken = getEditToken(editingPost.slug);
-        if (editToken) {
-          postData.editToken = editToken;
-        } else {
-          alert("Edit token not found. You can only edit posts you created.");
-          return;
-        }
-      }
+      // Edit token no longer required - anyone can edit any post
 
       const response = await fetch(url, {
         method,
@@ -247,24 +241,26 @@ export default function AdminPage() {
         setShowForm(false);
         setEditingPost(null);
         fetchPosts();
+        
+        // Show success toast
+        if (editingPost) {
+          toast.success("Post updated successfully!");
+        } else {
+          toast.success("Post created successfully!");
+        }
       } else {
         const error = await response.json();
-        alert(`Error: ${error.error || "Failed to save post"}`);
+        toast.error(error.error || "Failed to save post");
       }
     } catch (error) {
       console.error("Error saving post:", error);
-      alert("Failed to save post");
+      toast.error("Failed to save post. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleEdit = (post: Post) => {
-    // Check if user has edit token for this post
-    const editToken = getEditToken(post.slug);
-    if (!editToken) {
-      alert("You can only edit posts you created. The edit token is not available for this post.");
-      return;
-    }
-    
     setEditingPost(post);
     setValue("title", post.title);
     setValue("content", post.content || "");
@@ -281,27 +277,15 @@ export default function AdminPage() {
   const handleDelete = async (slug: string) => {
     if (!confirm("Are you sure you want to delete this post?")) return;
 
-    // Check if user has edit token for this post
-    const editToken = getEditToken(slug);
-    if (!editToken) {
-      alert("You can only delete posts you created. The edit token is not available for this post.");
-      return;
-    }
-
     try {
       const response = await fetch(`/api/posts/${slug}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ editToken }),
       });
 
       if (response.ok) {
-        // Remove edit token from localStorage
-        if (typeof window !== "undefined") {
-          localStorage.removeItem(`editToken_${slug}`);
-        }
         fetchPosts();
       } else {
         const error = await response.json();
@@ -365,7 +349,7 @@ export default function AdminPage() {
               </code>
             </div>
             <p className="text-xs text-green-600 dark:text-green-400">
-              This token has been saved to your browser&apos;s local storage. You can only edit posts you created.
+              This token has been saved to your browser&apos;s local storage.
             </p>
             <button
               onClick={() => {
@@ -661,9 +645,38 @@ export default function AdminPage() {
 
               <button
                 type="submit"
-                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                disabled={isSubmitting}
+                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                {editingPost ? "Update Post" : "Create Post"}
+                {isSubmitting && (
+                  <svg
+                    className="animate-spin h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                )}
+                {isSubmitting
+                  ? editingPost
+                    ? "Updating..."
+                    : "Creating..."
+                  : editingPost
+                  ? "Update Post"
+                  : "Create Post"}
               </button>
             </div>
           </form>
