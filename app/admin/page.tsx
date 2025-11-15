@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -364,7 +365,7 @@ export default function AdminPage() {
               </code>
             </div>
             <p className="text-xs text-green-600 dark:text-green-400">
-              This token has been saved to your browser's local storage. You can only edit posts you created.
+              This token has been saved to your browser&apos;s local storage. You can only edit posts you created.
             </p>
             <button
               onClick={() => {
@@ -564,9 +565,12 @@ export default function AdminPage() {
                   ) : imageUrl ? (
                     <div className="space-y-4">
                       <div className="relative inline-block mx-auto">
-                        <img
+                        <Image
                           src={imageUrl}
                           alt="Featured image preview"
+                          width={800}
+                          height={600}
+                          unoptimized
                           className="max-w-full h-auto max-h-80 mx-auto rounded-lg border border-gray-300 dark:border-gray-600 shadow-md object-contain"
                         />
                       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { FaHeart, FaRegHeart } from "react-icons/fa";
 
 interface LikeButtonProps {
@@ -13,11 +13,7 @@ export default function LikeButton({ postSlug }: LikeButtonProps) {
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(false);
 
-  useEffect(() => {
-    fetchLikes();
-  }, [postSlug]);
-
-  const fetchLikes = async () => {
+  const fetchLikes = useCallback(async () => {
     try {
       // Get or create a client identifier for tracking likes
       let clientId = null;
@@ -70,7 +66,11 @@ export default function LikeButton({ postSlug }: LikeButtonProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [postSlug]);
+
+  useEffect(() => {
+    fetchLikes();
+  }, [postSlug, fetchLikes]);
 
   const handleToggleLike = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
