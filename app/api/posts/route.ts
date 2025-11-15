@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth-config";
 import { z } from "zod";
-import jwt from "jsonwebtoken";
+import crypto from "crypto";
 
 const postSchema = z.object({
   title: z.string().min(1),
@@ -12,40 +10,13 @@ const postSchema = z.object({
   published: z.boolean().default(false),
   categoryId: z.string().optional(),
   tags: z.string().optional(),
-  imageUrl: z.string().optional(),
+  imageUrl: z.string().nullable().optional(),
+  creatorName: z.string().optional(),
 });
 
-const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || "your-secret-key";
-
-// Helper function to get user from either NextAuth session or JWT token
-async function getAuthenticatedUser(request: NextRequest) {
-  // Try NextAuth session first
-  const session = await getServerSession(authOptions);
-  if (session && (session.user as any)?.id) {
-    return {
-      id: (session.user as any).id,
-      role: (session.user as any).role,
-    };
-  }
-
-  // Try JWT token from Authorization header
-  const authHeader = request.headers.get("authorization");
-  if (authHeader && authHeader.startsWith("Bearer ")) {
-    const token = authHeader.substring(7);
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET) as any;
-      if (decoded.id) {
-        return {
-          id: decoded.id,
-          role: decoded.role,
-        };
-      }
-    } catch (error) {
-      // Token invalid, continue to return null
-    }
-  }
-
-  return null;
+// Generate a unique edit token
+function generateEditToken(): string {
+  return crypto.randomBytes(32).toString('hex');
 }
 
 // Enable caching for GET requests
@@ -100,14 +71,9 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST create new post
+// POST create new post (public, no authentication required)
 export async function POST(request: NextRequest) {
   try {
-    const user = await getAuthenticatedUser(request);
-    if (!user || !user.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
     const validatedData = postSchema.parse(body);
 
@@ -130,18 +96,69 @@ export async function POST(request: NextRequest) {
       counter++;
     }
 
+    // Generate edit token for public posts
+    const editToken = generateEditToken();
+
+    // Handle imageUrl - accept string, null, or undefined
+    let imageUrlValue = null;
+    if (validatedData.imageUrl !== null && validatedData.imageUrl !== undefined) {
+      const trimmed = validatedData.imageUrl.trim();
+      imageUrlValue = trimmed !== "" ? trimmed : null;
+    }
+
+    // Handle categoryId - validate ObjectId format if provided, but don't block creation if invalid
+    let categoryIdValue: string | undefined = undefined;
+    if (validatedData.categoryId && validatedData.categoryId.trim() !== "") {
+      const trimmedCategoryId = validatedData.categoryId.trim();
+      const objectIdRegex = /^[0-9a-fA-F]{24}$/;
+      if (objectIdRegex.test(trimmedCategoryId)) {
+        // Verify category exists - if it doesn't, just skip it instead of failing
+        try {
+          const categoryExists = await prisma.category.findUnique({
+            where: { id: trimmedCategoryId }
+          });
+          if (categoryExists) {
+            categoryIdValue = trimmedCategoryId;
+          }
+        } catch (err) {
+          // If category lookup fails, just continue without category
+          console.warn('Category lookup failed, continuing without category:', err);
+        }
+      }
+    }
+
+    // Build the data object for Prisma - only include fields that are defined
+    const postData: any = {
+      title: validatedData.title,
+      content: validatedData.content,
+      slug: slug,
+      published: validatedData.published ?? false,
+      tags: validatedData.tags || "",
+      editToken: editToken,
+    };
+
+    // Add optional fields only if they have values
+    if (validatedData.excerpt && validatedData.excerpt.trim() !== "") {
+      postData.excerpt = validatedData.excerpt.trim();
+    }
+    
+    if (categoryIdValue) {
+      postData.categoryId = categoryIdValue;
+    }
+    
+    // Include imageUrl if it has a value (can be null or string)
+    if (imageUrlValue !== null && imageUrlValue !== undefined) {
+      postData.imageUrl = imageUrlValue;
+    }
+    
+    if (validatedData.creatorName && validatedData.creatorName.trim() !== "") {
+      postData.creatorName = validatedData.creatorName.trim();
+    }
+
+    console.log('Creating post with data:', JSON.stringify(postData, null, 2));
+
     const post = await prisma.post.create({
-      data: {
-        title: validatedData.title,
-        content: validatedData.content,
-        excerpt: validatedData.excerpt,
-        published: validatedData.published,
-        tags: validatedData.tags || "",
-        categoryId: validatedData.categoryId || null,
-        imageUrl: validatedData.imageUrl && validatedData.imageUrl.trim() !== "" ? validatedData.imageUrl : null,
-        slug,
-        authorId: user.id,
-      },
+      data: postData,
       include: {
         author: {
           select: {
@@ -159,14 +176,59 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(post, { status: 201 });
+    // Return post with edit token so user can save it
+    return NextResponse.json({ ...post, editToken }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors }, { status: 400 });
     }
-    console.error("Error creating post:", error);
+    
+    // Log full error details
+    console.error("Error creating post - Full error:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+    console.error("Error creating post - Error object:", error);
+    
+    // Provide more detailed error information
+    let errorMessage = "Unknown error";
+    let errorCode = null;
+    let errorMeta = null;
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    
+    // Check for Prisma-specific errors
+    if (error && typeof error === 'object') {
+      const prismaError = error as any;
+      errorCode = prismaError.code;
+      errorMeta = prismaError.meta;
+      
+      if (prismaError.code === 'P2002') {
+        return NextResponse.json(
+          { 
+            error: "A post with this slug or edit token already exists",
+            details: prismaError.meta?.target ? `Duplicate on field(s): ${prismaError.meta.target.join(', ')}` : undefined
+          },
+          { status: 409 }
+        );
+      }
+      if (prismaError.code === 'P2003') {
+        return NextResponse.json(
+          { 
+            error: "Invalid categoryId. Category does not exist.",
+            details: prismaError.meta?.field_name ? `Field: ${prismaError.meta.field_name}` : undefined
+          },
+          { status: 400 }
+        );
+      }
+    }
+    
     return NextResponse.json(
-      { error: "Failed to create post" },
+      { 
+        error: "Failed to create post",
+        details: errorMessage,
+        code: errorCode,
+        meta: process.env.NODE_ENV === "development" ? errorMeta : undefined
+      },
       { status: 500 }
     );
   }

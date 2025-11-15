@@ -6,13 +6,13 @@ import Navbar from "@/components/Navbar";
 import Providers from "@/components/Providers";
 
 export const metadata: Metadata = {
-  title: "Blog Website - Modern Blogging Platform",
-  description: "A modern blogging platform built with Next.js. Write, edit, and share your stories with the world.",
-  keywords: "blog, articles, writing, nextjs, react",
-  authors: [{ name: "Blog Website" }],
+  title: "Article Website - Modern Article Platform",
+  description: "A modern article platform built with Next.js. Write, edit, and share your stories with the world.",
+  keywords: "article, articles, writing, nextjs, react",
+  authors: [{ name: "Article Website" }],
   openGraph: {
-    title: "Blog Website",
-    description: "A modern blogging platform built with Next.js",
+    title: "Article Website",
+    description: "A modern article platform built with Next.js",
     type: "website",
   },
 };
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 const themeInitializer = `
 (function () {
   try {
-    const storedTheme = window.localStorage.getItem('blog-theme');
+    const storedTheme = window.localStorage.getItem('article-theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const theme = storedTheme === 'light' || storedTheme === 'dark'
       ? storedTheme

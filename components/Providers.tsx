@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { SessionProvider } from "next-auth/react";
+import { Toaster } from "react-hot-toast";
 import {
   getLanguageOptions,
   isSupportedLanguage,
@@ -33,8 +34,8 @@ type LanguageContextValue = {
   t: (key: string) => string;
 };
 
-const THEME_STORAGE_KEY = "blog-theme";
-const LANGUAGE_STORAGE_KEY = "blog-language";
+const THEME_STORAGE_KEY = "article-theme";
+const LANGUAGE_STORAGE_KEY = "article-language";
 const LANGUAGE_OPTIONS = getLanguageOptions();
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
@@ -144,7 +145,41 @@ export default function Providers({ children }: { children: ReactNode }) {
   return (
     <SessionProvider>
       <ThemeProvider>
-        <LanguageProvider>{children}</LanguageProvider>
+        <LanguageProvider>
+          {children}
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: "#fff",
+                color: "#363636",
+              },
+              success: {
+                duration: 4000,
+                iconTheme: {
+                  primary: "#10b981",
+                  secondary: "#fff",
+                },
+                style: {
+                  background: "#d1fae5",
+                  color: "#065f46",
+                },
+              },
+              error: {
+                duration: 4000,
+                iconTheme: {
+                  primary: "#ef4444",
+                  secondary: "#fff",
+                },
+                style: {
+                  background: "#fee2e2",
+                  color: "#991b1b",
+                },
+              },
+            }}
+          />
+        </LanguageProvider>
       </ThemeProvider>
     </SessionProvider>
   );

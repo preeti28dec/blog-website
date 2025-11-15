@@ -66,7 +66,13 @@ export default function CommentsList({ postSlug, postTitle, refreshTrigger }: Co
                   {comment.authorName}
                 </span>
                 <span className="text-sm text-gray-500">
-                  {new Date(comment.createdAt).toLocaleDateString()}
+                  {new Date(comment.createdAt).toLocaleString(undefined, {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
                 </span>
               </div>
               <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">

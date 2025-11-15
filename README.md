@@ -50,6 +50,21 @@ CLOUDINARY_URL="cloudinary://API_KEY:API_SECRET@CLOUD_NAME"
 # CLOUDINARY_API_KEY="your-api-key"
 # CLOUDINARY_API_SECRET="your-api-secret"
 
+# Email Configuration (for contact form)
+# SMTP settings for sending emails via nodemailer
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT="587"
+SMTP_SECURE="false"
+SMTP_USER="your-email@gmail.com"
+SMTP_PASS="your-app-password"
+SMTP_FROM="your-email@gmail.com"
+
+# Note: For Gmail, you need to use an App Password, not your regular password
+# 1. Enable 2-Step Verification on your Google Account
+# 2. Go to Google Account > Security > App Passwords
+# 3. Generate an app password for "Mail"
+# 4. Use that app password as SMTP_PASS
+
 # App
 NODE_ENV="development"
 ```

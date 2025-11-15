@@ -29,6 +29,15 @@ export async function getPosts(categorySlug?: string) {
                 slug: true,
               },
             },
+            _count: {
+              select: {
+                comments: {
+                  where: {
+                    approved: true,
+                  },
+                },
+              },
+            },
           },
           orderBy: {
             createdAt: "desc",

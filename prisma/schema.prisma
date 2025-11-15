@@ -40,13 +40,16 @@ model Post {
   content    String
   excerpt    String?
   published  Boolean    @default(false)
-  authorId   String     @db.ObjectId
-  author     User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId   String?    @db.ObjectId
+  author     User?      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  creatorName String?  // For public posts without authentication
+  editToken  String?   @unique // Token to allow editing of public posts
   categoryId String?    @db.ObjectId
   category   Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   tags       String     @default("") // Comma-separated tags
   imageUrl   String?    // Cloudinary image URL
   comments   Comment[]
+  likes      Like[]
   views      Int        @default(0)
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
@@ -70,5 +73,19 @@ model Comment {
   @@index([postId])
   @@index([approved])
   @@map("comments")
+}
+
+model Like {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  postId    String   @db.ObjectId
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userIp    String?  // Track by IP for public users
+  userEmail String?  // Track by email if logged in
+  createdAt DateTime @default(now())
+
+  @@index([postId])
+  @@index([postId, userIp])
+  @@index([postId, userEmail])
+  @@map("likes")
 }
 

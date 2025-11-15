@@ -17,7 +17,10 @@ export default async function Home({
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="max-w-6xl mx-auto">
-        <CategoryFilter categories={categories} currentCategory={searchParams.category} />
+        <CategoryFilter
+          categories={categories}
+          currentCategory={searchParams.category}
+        />
 
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 mt-8">
           {posts.length === 0 ? (
@@ -37,7 +40,7 @@ export default async function Home({
                   <div className="relative w-full h-48 md:h-56 overflow-hidden bg-gray-200 dark:bg-gray-700">
                     <Image
                       src={post.imageUrl}
-                      alt={post.title || "Blog post image"}
+                      alt={post.title || "Article post image"}
                       fill
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       className="object-cover transition-transform duration-300 hover:scale-105"
@@ -46,13 +49,79 @@ export default async function Home({
                 ) : (
                   <div className="relative w-full h-48 md:h-56 overflow-hidden bg-gradient-to-br from-blue-100 to-purple-100 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center">
                     <div className="text-center p-4">
-                      <svg className="w-16 h-16 mx-auto text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      <svg
+                        className="w-16 h-16 mx-auto text-gray-400 dark:text-gray-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
                       </svg>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">No image</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                        No image
+                      </p>
                     </div>
                   </div>
                 )}
+                 <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 px-3 pt-2">
+                    <div className="flex items-center gap-1">
+                      <span>By</span>
+                      <span className="font-semibold text-gray-700 dark:text-gray-300">
+                        {post.creatorName || post.author?.name || post.author?.email || "Unknown"}
+                      </span>
+                      <span>-</span>
+                      <span>
+                        {new Date(post.createdAt).toLocaleDateString("en-US", {
+                          month: "long",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 9a3 3 0 100 6 3 3 0 000-6z"
+                        />
+                      </svg>
+                      <span>{post.views || 0}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                        />
+                      </svg>
+                      <span>{post._count?.comments || 0}</span>
+                    </div>
+                  </div>
                 <div className="p-6">
                   {post.category && (
                     <span className="inline-block px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full mb-3">
@@ -69,19 +138,21 @@ export default async function Home({
                   )}
                   {post.tags && (
                     <div className="flex flex-wrap gap-2 mb-4">
-                      {post.tags.split(",").slice(0, 3).map((tag: string, idx: number) => (
-                        <span
-                          key={idx}
-                          className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded"
-                        >
-                          #{tag.trim()}
-                        </span>
-                      ))}
+                      {post.tags
+                        .split(",")
+                        .slice(0, 3)
+                        .map((tag: string, idx: number) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded"
+                          >
+                            #{tag.trim()}
+                          </span>
+                        ))}
                     </div>
                   )}
-                  <div className="flex items-center justify-between text-sm text-gray-500">
-                    <span>{new Date(post.createdAt).toLocaleDateString()}</span>
-                    <span className="text-blue-600 dark:text-blue-400 hover:underline">
+                  <div className="flex items-center justify-end">
+                    <span className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
                       Read more →
                     </span>
                   </div>
@@ -94,4 +165,3 @@ export default async function Home({
     </div>
   );
 }
-

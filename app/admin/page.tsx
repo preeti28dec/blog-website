@@ -1,13 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { authApi, getAuthToken } from "@/lib/api";
 
 const postSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -16,7 +13,8 @@ const postSchema = z.object({
   published: z.boolean().default(false),
   categoryId: z.string().optional(),
   tags: z.string().optional(),
-  imageUrl: z.string().optional(),
+  imageUrl: z.string().nullable().optional(),
+  creatorName: z.string().optional(),
 });
 
 interface Post {
@@ -30,6 +28,8 @@ interface Post {
   imageUrl: string | null;
   category: { id: string; name: string; slug: string } | null;
   createdAt: string;
+  editToken?: string;
+  creatorName?: string | null;
 }
 
 interface Category {
@@ -38,11 +38,18 @@ interface Category {
   slug: string;
 }
 
+// Helper functions to manage edit tokens in localStorage
+const getEditToken = (slug: string): string | null => {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(`editToken_${slug}`);
+};
+
+const saveEditToken = (slug: string, token: string) => {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(`editToken_${slug}`, token);
+};
+
 export default function AdminPage() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
-  const [jwtUser, setJwtUser] = useState<any>(null);
-  const [checkingAuth, setCheckingAuth] = useState(true);
   const [posts, setPosts] = useState<Post[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,6 +61,8 @@ export default function AdminPage() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [uploadingFileName, setUploadingFileName] = useState("");
+  const [createdEditToken, setCreatedEditToken] = useState<string | null>(null);
+  const [createdPostSlug, setCreatedPostSlug] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -65,8 +74,6 @@ export default function AdminPage() {
   } = useForm({
     resolver: zodResolver(postSchema),
   });
-
-  const isAuthenticated = session || jwtUser;
 
   const fetchPosts = async () => {
     try {
@@ -90,42 +97,11 @@ export default function AdminPage() {
     }
   };
 
-  // Check authentication (both NextAuth and JWT)
+  // Load posts and categories on mount
   useEffect(() => {
-    const checkAuth = async () => {
-      // If NextAuth session exists, use it
-      if (status === "authenticated" && session) {
-        setCheckingAuth(false);
-        fetchPosts();
-        fetchCategories();
-        return;
-      }
-
-      // If NextAuth is not authenticated, check JWT token
-      if (status === "unauthenticated") {
-        const token = getAuthToken();
-        if (token) {
-          try {
-            const userData = await authApi.getCurrentUser();
-            if (userData.user) {
-              setJwtUser(userData.user);
-              setCheckingAuth(false);
-              fetchPosts();
-              fetchCategories();
-              return;
-            }
-          } catch (error) {
-            // Token invalid, clear it
-            authApi.logout();
-          }
-        }
-        // No valid authentication found, redirect to login
-        router.push("/login");
-      }
-    };
-
-    checkAuth();
-  }, [status, session, router]);
+    fetchPosts();
+    fetchCategories();
+  }, []);
 
   const handleImageUpload = async (file: File) => {
     if (!file) return;
@@ -152,19 +128,9 @@ export default function AdminPage() {
       const formData = new FormData();
       formData.append('file', file);
 
-      // Get auth token if available (for JWT)
-      const token = getAuthToken();
-      const headers: HeadersInit = {};
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-      // Note: NextAuth session cookies are automatically sent with fetch
-
       const response = await fetch('/api/upload', {
         method: 'POST',
-        headers,
         body: formData,
-        credentials: 'include', // Ensure cookies are sent
       });
 
       if (response.ok) {
@@ -231,11 +197,11 @@ export default function AdminPage() {
         ...data,
       };
       
-      // Always include imageUrl if it exists in state (even if empty string, we want to clear it)
+      // Handle imageUrl - use state value if available, otherwise form data, or null
       if (imageUrl && imageUrl.trim() !== "") {
-        postData.imageUrl = imageUrl;
-      } else if (data.imageUrl && data.imageUrl.trim() !== "") {
-        postData.imageUrl = data.imageUrl;
+        postData.imageUrl = imageUrl.trim();
+      } else if (data.imageUrl && typeof data.imageUrl === 'string' && data.imageUrl.trim() !== "") {
+        postData.imageUrl = data.imageUrl.trim();
       } else {
         // Explicitly set to null if no image
         postData.imageUrl = null;
@@ -244,24 +210,35 @@ export default function AdminPage() {
       console.log('Submitting post with data:', postData); // Debug log
       console.log('ImageUrl state:', imageUrl); // Debug log
 
-      // Get auth token if available (for JWT authentication)
-      const token = getAuthToken();
-      const headers: HeadersInit = {
-        "Content-Type": "application/json",
-      };
-      
-      // Add JWT token to headers if available
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
+      // If editing, add edit token from localStorage
+      if (editingPost) {
+        const editToken = getEditToken(editingPost.slug);
+        if (editToken) {
+          postData.editToken = editToken;
+        } else {
+          alert("Edit token not found. You can only edit posts you created.");
+          return;
+        }
       }
 
       const response = await fetch(url, {
         method,
-        headers,
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(postData),
       });
 
       if (response.ok) {
+        const result = await response.json();
+        
+        // If creating a new post, save the edit token
+        if (!editingPost && result.editToken) {
+          saveEditToken(result.slug, result.editToken);
+          setCreatedEditToken(result.editToken);
+          setCreatedPostSlug(result.slug);
+        }
+        
         reset();
         setImageUrl("");
         setValue("imageUrl", "");
@@ -280,6 +257,13 @@ export default function AdminPage() {
   };
 
   const handleEdit = (post: Post) => {
+    // Check if user has edit token for this post
+    const editToken = getEditToken(post.slug);
+    if (!editToken) {
+      alert("You can only edit posts you created. The edit token is not available for this post.");
+      return;
+    }
+    
     setEditingPost(post);
     setValue("title", post.title);
     setValue("content", post.content || "");
@@ -288,6 +272,7 @@ export default function AdminPage() {
     setValue("categoryId", post.category?.id || "");
     setValue("tags", post.tags || "");
     setValue("imageUrl", post.imageUrl || "");
+    setValue("creatorName", post.creatorName || "");
     setImageUrl(post.imageUrl || "");
     setShowForm(true);
   };
@@ -295,25 +280,31 @@ export default function AdminPage() {
   const handleDelete = async (slug: string) => {
     if (!confirm("Are you sure you want to delete this post?")) return;
 
-    try {
-      // Get auth token if available (for JWT authentication)
-      const token = getAuthToken();
-      const headers: HeadersInit = {};
-      
-      // Add JWT token to headers if available
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
+    // Check if user has edit token for this post
+    const editToken = getEditToken(slug);
+    if (!editToken) {
+      alert("You can only delete posts you created. The edit token is not available for this post.");
+      return;
+    }
 
+    try {
       const response = await fetch(`/api/posts/${slug}`, {
         method: "DELETE",
-        headers,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ editToken }),
       });
 
       if (response.ok) {
+        // Remove edit token from localStorage
+        if (typeof window !== "undefined") {
+          localStorage.removeItem(`editToken_${slug}`);
+        }
         fetchPosts();
       } else {
-        alert("Failed to delete post");
+        const error = await response.json();
+        alert(`Failed to delete post: ${error.error || "Unknown error"}`);
       }
     } catch (error) {
       console.error("Error deleting post:", error);
@@ -347,7 +338,7 @@ export default function AdminPage() {
     }
   };
 
-  if (checkingAuth || status === "loading" || loading) {
+  if (loading) {
     return (
       <div className="container mx-auto px-4 py-12">
         <div className="text-center">Loading...</div>
@@ -355,15 +346,40 @@ export default function AdminPage() {
     );
   }
 
-  if (!isAuthenticated) {
-    return null;
-  }
-
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="max-w-6xl mx-auto">
+        {/* Show edit token after creating a post */}
+        {createdEditToken && createdPostSlug && (
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6">
+            <h3 className="font-semibold text-green-800 dark:text-green-200 mb-2">
+              Post created successfully!
+            </h3>
+            <p className="text-sm text-green-700 dark:text-green-300 mb-2">
+              Save this edit token to edit or delete your post later:
+            </p>
+            <div className="bg-white dark:bg-gray-800 p-3 rounded border border-green-200 dark:border-green-700 mb-2">
+              <code className="text-xs break-all text-gray-800 dark:text-gray-200">
+                {createdEditToken}
+              </code>
+            </div>
+            <p className="text-xs text-green-600 dark:text-green-400">
+              This token has been saved to your browser's local storage. You can only edit posts you created.
+            </p>
+            <button
+              onClick={() => {
+                setCreatedEditToken(null);
+                setCreatedPostSlug(null);
+              }}
+              className="mt-2 text-sm text-green-700 dark:text-green-300 hover:underline"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+          <h1 className="text-3xl font-bold">Create & Manage Articles</h1>
           <div className="flex gap-3">
             <button
               onClick={() => {
@@ -463,6 +479,21 @@ export default function AdminPage() {
                   {...register("excerpt")}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Your Name (optional)
+                </label>
+                <input
+                  type="text"
+                  {...register("creatorName")}
+                  placeholder="Enter your name to be displayed as the author"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  This will be shown as the author of the article
+                </p>
               </div>
 
               <div>

@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth-config";
 import { z } from "zod";
-import jwt from "jsonwebtoken";
 
 const updatePostSchema = z.object({
   title: z.string().min(1).optional(),
@@ -12,41 +9,9 @@ const updatePostSchema = z.object({
   published: z.boolean().optional(),
   categoryId: z.string().optional(),
   tags: z.string().optional(),
-  imageUrl: z.string().optional(),
+  imageUrl: z.string().nullable().optional(),
+  editToken: z.string().optional(), // Edit token to verify ownership
 });
-
-const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || "your-secret-key";
-
-// Helper function to get user from either NextAuth session or JWT token
-async function getAuthenticatedUser(request: NextRequest) {
-  // Try NextAuth session first
-  const session = await getServerSession(authOptions);
-  if (session && (session.user as any)?.id) {
-    return {
-      id: (session.user as any).id,
-      role: (session.user as any).role,
-    };
-  }
-
-  // Try JWT token from Authorization header
-  const authHeader = request.headers.get("authorization");
-  if (authHeader && authHeader.startsWith("Bearer ")) {
-    const token = authHeader.substring(7);
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET) as any;
-      if (decoded.id) {
-        return {
-          id: decoded.id,
-          role: decoded.role,
-        };
-      }
-    } catch (error) {
-      // Token invalid, continue to return null
-    }
-  }
-
-  return null;
-}
 
 // GET single post by slug
 export async function GET(
@@ -96,21 +61,16 @@ export async function GET(
   }
 }
 
-// PUT update post
+// PUT update post (requires edit token for public posts)
 export async function PUT(
   request: NextRequest,
   { params }: { params: { slug: string } }
 ) {
   try {
-    const user = await getAuthenticatedUser(request);
-    if (!user || !user.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
     const validatedData = updatePostSchema.parse(body);
 
-    // Check if user owns the post or is admin
+    // Get the existing post
     const existingPost = await prisma.post.findUnique({
       where: { slug: params.slug },
     });
@@ -119,14 +79,22 @@ export async function PUT(
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
-    if (
-      existingPost.authorId !== user.id &&
-      user.role !== "ADMIN"
-    ) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // Check if user has permission to edit
+    // For public posts (no authorId), require edit token
+    if (!existingPost.authorId) {
+      if (!validatedData.editToken || validatedData.editToken !== existingPost.editToken) {
+        return NextResponse.json({ error: "Invalid edit token. You can only edit posts you created." }, { status: 403 });
+      }
+    } else {
+      // For posts with authorId (legacy authenticated posts), still require edit token or skip for now
+      // In a full migration, you might want to handle this differently
+      if (!validatedData.editToken || validatedData.editToken !== existingPost.editToken) {
+        return NextResponse.json({ error: "Invalid edit token. You can only edit posts you created." }, { status: 403 });
+      }
     }
 
-    const updateData: any = { ...validatedData };
+    // Remove editToken from update data (it's only for verification)
+    const { editToken, ...updateData } = validatedData;
 
     // If title is updated, regenerate slug
     if (validatedData.title) {
@@ -136,11 +104,13 @@ export async function PUT(
         .replace(/(^-|-$)/g, "");
     }
 
-    // Handle imageUrl - set to null if empty string, otherwise use the value
+    // Handle imageUrl - accept string, null, or undefined
     if (validatedData.imageUrl !== undefined) {
-      updateData.imageUrl = validatedData.imageUrl && validatedData.imageUrl.trim() !== "" 
-        ? validatedData.imageUrl 
-        : null;
+      if (validatedData.imageUrl !== null && validatedData.imageUrl.trim() !== "") {
+        updateData.imageUrl = validatedData.imageUrl.trim();
+      } else {
+        updateData.imageUrl = null;
+      }
     }
 
     console.log('Updating post with data:', updateData); // Debug log
@@ -179,16 +149,14 @@ export async function PUT(
   }
 }
 
-// DELETE post
+// DELETE post (requires edit token)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { slug: string } }
 ) {
   try {
-    const user = await getAuthenticatedUser(request);
-    if (!user || !user.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const body = await request.json().catch(() => ({}));
+    const { editToken } = body;
 
     const post = await prisma.post.findUnique({
       where: { slug: params.slug },
@@ -198,11 +166,9 @@ export async function DELETE(
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
-    if (
-      post.authorId !== user.id &&
-      user.role !== "ADMIN"
-    ) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // Check edit token
+    if (!editToken || editToken !== post.editToken) {
+      return NextResponse.json({ error: "Invalid edit token. You can only delete posts you created." }, { status: 403 });
     }
 
     await prisma.post.delete({

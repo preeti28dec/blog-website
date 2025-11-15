@@ -15,18 +15,32 @@ export default function ContactPage() {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Handle form submission here
-    console.log("Form submitted:", formData);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setSubmitted(true);
-      setIsSubmitting(false);
-      setTimeout(() => {
-        setSubmitted(false);
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSubmitted(true);
         setFormData({ name: "", email: "", message: "" });
-      }, 3000);
-    }, 1000);
+        setTimeout(() => {
+          setSubmitted(false);
+        }, 5000);
+      } else {
+        alert(data.error || "Failed to send message. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error submitting contact form:", error);
+      alert("An error occurred. Please try again later.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (
@@ -354,10 +368,10 @@ export default function ContactPage() {
                     </svg>
                   </div>
                   <a
-                    href="mailto:johndoe123@gmail.com"
+                    href="mailto:officialpreetithakur@gmail.com"
                     className="text-base font-medium hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
                   >
-                    johndoe123@gmail.com
+                    officialpreetithakur@gmail.com
                   </a>
                 </div>
               </div>

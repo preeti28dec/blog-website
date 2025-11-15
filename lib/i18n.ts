@@ -34,7 +34,7 @@ type TranslationDictionary = {
 export const translations = {
   en: {
     brand: {
-      title: "Blog Website",
+      title: "Article Website",
     },
     nav: {
       home: "Home",

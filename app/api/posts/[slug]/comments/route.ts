@@ -25,7 +25,6 @@ export async function GET(
     const comments = await prisma.comment.findMany({
       where: {
         postId: post.id,
-        approved: true,
       },
       orderBy: {
         createdAt: "desc",
@@ -62,7 +61,7 @@ export async function POST(
       data: {
         ...validatedData,
         postId: post.id,
-        approved: false, // Comments need approval
+        approved: true, // Comments are automatically approved
       },
     });
 

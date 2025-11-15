@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import toast from "react-hot-toast";
 
 const commentSchema = z.object({
   authorName: z.string().min(1, "Name is required"),
@@ -18,7 +19,6 @@ interface CommentFormProps {
 
 export default function CommentForm({ postSlug, onCommentAdded }: CommentFormProps) {
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
 
   const {
     register,
@@ -31,7 +31,6 @@ export default function CommentForm({ postSlug, onCommentAdded }: CommentFormPro
 
   const onSubmit = async (data: any) => {
     setLoading(true);
-    setMessage("");
 
     try {
       const response = await fetch(`/api/posts/${postSlug}/comments`, {
@@ -43,15 +42,15 @@ export default function CommentForm({ postSlug, onCommentAdded }: CommentFormPro
       });
 
       if (response.ok) {
-        setMessage("Comment submitted! It will be visible after approval.");
+        toast.success("Comment submitted successfully!");
         reset();
         onCommentAdded();
       } else {
         const errorData = await response.json();
-        setMessage(errorData.error || "Failed to submit comment");
+        toast.error(errorData.error || "Failed to submit comment");
       }
     } catch (error) {
-      setMessage("An error occurred. Please try again.");
+      toast.error("An error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -60,18 +59,6 @@ export default function CommentForm({ postSlug, onCommentAdded }: CommentFormPro
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-8">
       <h3 className="text-xl font-semibold mb-4">Leave a Comment</h3>
-      
-      {message && (
-        <div
-          className={`p-3 rounded ${
-            message.includes("submitted")
-              ? "bg-green-100 text-green-700"
-              : "bg-red-100 text-red-700"
-          }`}
-        >
-          {message}
-        </div>
-      )}
 
       <div className="grid md:grid-cols-2 gap-4">
         <div>
@@ -120,8 +107,30 @@ export default function CommentForm({ postSlug, onCommentAdded }: CommentFormPro
       <button
         type="submit"
         disabled={loading}
-        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
+        {loading && (
+          <svg
+            className="animate-spin h-5 w-5 text-white"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+        )}
         {loading ? "Submitting..." : "Submit Comment"}
       </button>
     </form>

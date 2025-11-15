@@ -5,6 +5,7 @@ import { Metadata } from "next";
 import Image from "next/image";
 import SocialShare from "@/components/SocialShare";
 import CommentsSection from "@/components/CommentsSection";
+import LikeButton from "@/components/LikeButton";
 
 // Enable static generation with ISR (revalidate every 60 seconds)
 export const revalidate = 60;
@@ -59,7 +60,7 @@ export async function generateMetadata({
       description: post.excerpt || post.content.substring(0, 160),
       type: "article",
       publishedTime: new Date(post.createdAt).toISOString(),
-      authors: [post.author.name || post.author.email],
+      authors: [(post as any).creatorName || post.author?.name || post.author?.email || "Unknown"],
       images: post.imageUrl ? [
         {
           url: post.imageUrl,
@@ -144,11 +145,32 @@ export default async function PostPage({
           </h1>
 
           <div className="flex items-center gap-4 mb-4 text-sm text-gray-600 dark:text-gray-400">
-            <span>By {post.author.name || post.author.email}</span>
+            <span>By {(post as any).creatorName || post.author?.name || post.author?.email || "Unknown"}</span>
             <span>•</span>
             <span>{new Date(post.createdAt).toLocaleDateString()}</span>
             <span>•</span>
-            <span>{post.views || 0} views</span>
+            <span className="flex items-center gap-1">
+              <svg
+                className="w-4 h-4 text-gray-600 dark:text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9a3 3 0 100 6 3 3 0 000-6z"
+                />
+              </svg>
+              {post.views || 0} views
+            </span>
           </div>
 
           {post.tags && (
@@ -188,11 +210,14 @@ export default async function PostPage({
             dangerouslySetInnerHTML={{ __html: post.content }}
           />
 
-          <SocialShare
-            title={post.title}
-            url={postUrl}
-            description={post.excerpt || ""}
-          />
+          <div className="flex items-center justify-between mb-8 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <LikeButton postSlug={params.slug} />
+            <SocialShare
+              title={post.title}
+              url={postUrl}
+              description={post.excerpt || ""}
+            />
+          </div>
         </article>
 
         <CommentsSection postSlug={params.slug} postTitle={post.title} />

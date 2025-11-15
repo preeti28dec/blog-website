@@ -1,55 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { uploadImage } from '@/lib/cloudinary';
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth-config";
-import jwt from "jsonwebtoken";
-import { prisma } from "@/lib/prisma";
-
-const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || "your-secret-key";
-
-// Helper function to get user from either NextAuth session or JWT token
-async function getAuthenticatedUser(request: NextRequest) {
-  let userId: string | null = null;
-
-  // Try NextAuth session first
-  const session = await getServerSession(authOptions);
-  if (session && (session.user as any)?.id) {
-    userId = (session.user as any).id;
-  }
-
-  // If no session, try JWT token from Authorization header
-  if (!userId) {
-    const authHeader = request.headers.get("authorization");
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      const token = authHeader.substring(7);
-      try {
-        const decoded = jwt.verify(token, JWT_SECRET) as any;
-        if (decoded.id) {
-          userId = decoded.id;
-        }
-      } catch (error) {
-        console.error('JWT verification error:', error);
-        return null;
-      }
-    }
-  }
-
-  // Always fetch user from database to ensure we have the latest role
-  if (userId) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, role: true },
-    });
-    if (user) {
-      return {
-        id: user.id,
-        role: user.role,
-      };
-    }
-  }
-
-  return null;
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -73,29 +23,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check authentication - any authenticated user can upload images for their posts
-    const user = await getAuthenticatedUser(request);
-    console.log('Upload auth check - user:', user); // Debug log
-    
-    if (!user || !user.id) {
-      console.log('Upload failed: No user found');
-      return NextResponse.json(
-        { error: 'Unauthorized - Please log in to upload images' },
-        { status: 401 }
-      );
-    }
-    
-    // Allow any authenticated user to upload images (they can create posts, so they should be able to upload images)
-    // If you want to restrict to admins only, uncomment the following:
-    /*
-    const userRole = user.role?.toUpperCase() || '';
-    if (userRole !== 'ADMIN') {
-      return NextResponse.json(
-        { error: 'Forbidden - Admin access required' },
-        { status: 403 }
-      );
-    }
-    */
+    // Authentication check removed - allowing public image uploads
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
