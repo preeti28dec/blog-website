@@ -96,9 +96,12 @@ export async function PUT(
     // Remove editToken from update data (it's only for verification)
     const { editToken, ...updateData } = validatedData;
 
+    // Type updateData to allow slug property
+    type UpdateData = typeof updateData & { slug?: string };
+
     // If title is updated, regenerate slug
     if (validatedData.title) {
-      updateData.slug = validatedData.title
+      (updateData as UpdateData).slug = validatedData.title
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/(^-|-$)/g, "");
