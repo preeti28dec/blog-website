@@ -45,6 +45,10 @@ export default function CommentForm({ postSlug, onCommentAdded }: CommentFormPro
         toast.success("Comment submitted successfully!");
         reset();
         onCommentAdded();
+        // Dispatch custom event to update comment count in metadata
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("commentAdded", { detail: { postSlug } }));
+        }
       } else {
         const errorData = await response.json();
         toast.error(errorData.error || "Failed to submit comment");

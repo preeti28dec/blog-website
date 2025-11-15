@@ -68,21 +68,25 @@ export default async function Home({
                     </div>
                   </div>
                 )}
-                 <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 px-3 pt-2">
-                    <div className="flex items-center gap-1">
-                      <span>By</span>
-                      <span className="font-semibold text-gray-700 dark:text-gray-300">
-                        {post.creatorName || post.author?.name || post.author?.email || "Unknown"}
-                      </span>
-                      <span>-</span>
-                      <span>
-                        {new Date(post.createdAt).toLocaleDateString("en-US", {
-                          month: "long",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
-                      </span>
-                    </div>
+                <div className="px-6 pt-4 pb-2">
+                  {/* First line: Author and Date */}
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-2">
+                    <span>By</span>
+                    <span className="font-medium text-gray-700 dark:text-gray-300">
+                      {post.creatorName || post.author?.name || post.author?.email || "Unknown"}
+                    </span>
+                    <span className="w-1 h-1 rounded-full bg-gray-400 dark:bg-gray-500"></span>
+                    <span>
+                      {new Date(post.createdAt).toLocaleDateString("en-GB", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </div>
+                  
+                  {/* Second line: Views, Likes, Comments */}
+                  <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                     <div className="flex items-center gap-1">
                       <svg
                         className="w-4 h-4"
@@ -103,7 +107,27 @@ export default async function Home({
                           d="M12 9a3 3 0 100 6 3 3 0 000-6z"
                         />
                       </svg>
-                      <span>{post.views || 0}</span>
+                      <span>{post.views || 0} views</span>
+                    </div>
+                    <div className={`flex items-center gap-1 ${(post._count?.likes || 0) > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                      <svg
+                        className="w-4 h-4"
+                        fill={(post._count?.likes || 0) > 0 ? "currentColor" : "none"}
+                        stroke={(post._count?.likes || 0) > 0 ? "none" : "currentColor"}
+                        viewBox="0 0 24 24"
+                      >
+                        {(post._count?.likes || 0) > 0 ? (
+                          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                        ) : (
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                          />
+                        )}
+                      </svg>
+                      <span>{post._count?.likes || 0}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <svg
@@ -119,9 +143,10 @@ export default async function Home({
                           d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
                         />
                       </svg>
-                      <span>{post._count?.comments || 0}</span>
+                      <span>{post._count?.comments || 0} comments</span>
                     </div>
                   </div>
+                </div>
                 <div className="p-6">
                   {post.category && (
                     <span className="inline-block px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full mb-3">

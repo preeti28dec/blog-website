@@ -6,6 +6,7 @@ import Image from "next/image";
 import SocialShare from "@/components/SocialShare";
 import CommentsSection from "@/components/CommentsSection";
 import LikeButton from "@/components/LikeButton";
+import PostMetadata from "@/components/PostMetadata";
 
 // Enable static generation with ISR (revalidate every 60 seconds)
 export const revalidate = 60;
@@ -144,33 +145,13 @@ export default async function PostPage({
             {post.title}
           </h1>
 
-          <div className="flex items-center gap-4 mb-4 text-sm text-gray-600 dark:text-gray-400">
-            <span>By {(post as any).creatorName || post.author?.name || post.author?.email || "Unknown"}</span>
-            <span>•</span>
-            <span>{new Date(post.createdAt).toLocaleDateString()}</span>
-            <span>•</span>
-            <span className="flex items-center gap-1">
-              <svg
-                className="w-4 h-4 text-gray-600 dark:text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9a3 3 0 100 6 3 3 0 000-6z"
-                />
-              </svg>
-              {post.views || 0} views
-            </span>
+          <div className="mb-4">
+            <div className="flex items-center gap-4 mb-2 text-sm text-gray-600 dark:text-gray-400">
+              <span>By {(post as any).creatorName || post.author?.name || post.author?.email || "Unknown"}</span>
+              <span>•</span>
+              <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+            </div>
+            <PostMetadata postSlug={params.slug} views={post.views || 0} />
           </div>
 
           {post.tags && (

@@ -36,6 +36,7 @@ export async function getPosts(categorySlug?: string) {
                     approved: true,
                   },
                 },
+                likes: true,
               },
             },
           },
