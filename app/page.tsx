@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
@@ -9,7 +9,7 @@ import CategoryFilter from "@/components/CategoryFilter";
 // Enable static generation with ISR (revalidate every 60 seconds)
 // Note: This is now a client component, so ISR is handled differently
 
-export default function Home() {
+function HomeContent() {
   const searchParams = useSearchParams();
   const category = searchParams.get("category") || undefined;
   const [posts, setPosts] = useState<any[]>([]);
@@ -216,5 +216,21 @@ export default function Home() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto px-4 py-12">
+          <div className="max-w-6xl mx-auto text-center text-gray-500">
+            Loading page...
+          </div>
+        </div>
+      }
+    >
+      <HomeContent />
+    </Suspense>
   );
 }
