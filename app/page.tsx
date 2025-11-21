@@ -39,7 +39,7 @@ export default function Home() {
       <div className="max-w-6xl mx-auto">
         <CategoryFilter
           categories={categories}
-          currentCategory={searchParams.category}
+          currentCategory={category}
         />
 
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 mt-8">
