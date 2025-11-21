@@ -28,7 +28,7 @@ export default function SetupPage() {
       } else {
         toast.error(data.error || "Failed to create super admin.");
         if (data.message) {
-          toast.info(data.message);
+          toast(data.message, { icon: "ℹ️" });
         }
       }
     } catch (error) {
