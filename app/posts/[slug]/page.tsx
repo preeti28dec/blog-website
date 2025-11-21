@@ -137,7 +137,7 @@ export default function PostPage() {
           />
 
           <div className="flex items-center justify-between mb-8 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <LikeButton postSlug={params.slug} />
+            <LikeButton postSlug={slug} />
             <SocialShare
               title={post.title}
               url={postUrl}
@@ -146,7 +146,7 @@ export default function PostPage() {
           </div>
         </article>
 
-        <CommentsSection postSlug={params.slug} postTitle={post.title} />
+        <CommentsSection postSlug={slug} postTitle={post.title} />
       </div>
     </div>
   );
