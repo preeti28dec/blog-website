@@ -1,18 +1,38 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { getPosts, getCategories } from "@/lib/posts";
+import { useSearchParams } from "next/navigation";
 import CategoryFilter from "@/components/CategoryFilter";
 
 // Enable static generation with ISR (revalidate every 60 seconds)
-export const revalidate = 60;
+// Note: This is now a client component, so ISR is handled differently
 
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: { category?: string };
-}) {
-  const posts = await getPosts(searchParams.category);
-  const categories = await getCategories();
+export default function Home() {
+  const searchParams = useSearchParams();
+  const category = searchParams.get("category") || undefined;
+  const [posts, setPosts] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const postsRes = await fetch(category ? `/api/posts?category=${category}` : "/api/posts");
+        const categoriesRes = await fetch("/api/categories");
+        const postsData = await postsRes.json();
+        const categoriesData = await categoriesRes.json();
+        setPosts(postsData);
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [category]);
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -23,10 +43,14 @@ export default async function Home({
         />
 
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 mt-8">
-          {posts.length === 0 ? (
+          {loading ? (
+            <div className="col-span-full text-center py-12">
+              <p className="text-gray-500 text-lg">Loading...</p>
+            </div>
+          ) : posts.length === 0 ? (
             <div className="col-span-full text-center py-12">
               <p className="text-gray-500 text-lg">
-                No posts yet. Check back soon!
+                No posts found.
               </p>
             </div>
           ) : (
@@ -63,7 +87,7 @@ export default async function Home({
                         />
                       </svg>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                        No image
+                        No image available
                       </p>
                     </div>
                   </div>
@@ -107,7 +131,9 @@ export default async function Home({
                           d="M12 9a3 3 0 100 6 3 3 0 000-6z"
                         />
                       </svg>
-                      <span>{post.views || 0} views</span>
+                      <span>
+                        {post.views || 0} {(post.views || 0) === 1 ? "view" : "views"}
+                      </span>
                     </div>
                     <div className={`flex items-center gap-1 ${(post._count?.likes || 0) > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`}>
                       <svg
@@ -143,7 +169,9 @@ export default async function Home({
                           d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
                         />
                       </svg>
-                      <span>{post._count?.comments || 0} comments</span>
+                      <span>
+                        {post._count?.comments || 0} {(post._count?.comments || 0) === 1 ? "comment" : "comments"}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -178,7 +206,7 @@ export default async function Home({
                   )}
                   <div className="flex items-center justify-end">
                     <span className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
-                      Read more →
+                      Read more
                     </span>
                   </div>
                 </div>

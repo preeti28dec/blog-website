@@ -7,17 +7,92 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import toast from "react-hot-toast";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
-const postSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  content: z.string().min(1, "Content is required"),
-  excerpt: z.string().optional(),
-  published: z.boolean().default(false),
-  categoryId: z.string().optional(),
-  tags: z.string().optional(),
-  imageUrl: z.string().nullable().optional(),
-  creatorName: z.string().optional(),
-});
+const ADMIN_TEXT = {
+  titleRequired: "Title is required.",
+  contentRequired: "Content is required.",
+  accessDenied: "You do not have permission to view this page.",
+  imageTypeError: "Please upload a valid image file.",
+  imageSizeError: "Image must be 5MB or smaller.",
+  uploadFailed: "Upload failed",
+  networkError: "Network error",
+  postUpdated: "Post updated successfully!",
+  postCreated: "Post created successfully!",
+  failedToSave: "Failed to save post.",
+  deleteConfirm: "Are you sure you want to delete this post?",
+  postDeleted: "Post deleted.",
+  failedToDelete: "Failed to delete post.",
+  failedToCreateCategory: "Failed to create category.",
+  loading: "Loading...",
+  saveEditToken: "Save this edit token so you can edit the post later.",
+  editTokenSaved: "The token was also stored locally for convenience.",
+  dismiss: "Dismiss",
+  title: "Manage Posts",
+  cancel: "Cancel",
+  newCategory: "New Category",
+  newPost: "New Post",
+  createCategory: "Create Category",
+  categoryName: "Category name",
+  create: "Create",
+  editPost: "Edit Post",
+  createNewPost: "Create New Post",
+  postTitle: "Post title",
+  content: "Content",
+  excerptOptional: "Excerpt (optional)",
+  yourName: "Your name",
+  yourNamePlaceholder: "John Doe",
+  yourNameHint: "Displayed as the author for this post.",
+  category: "Category",
+  noCategory: "No category",
+  tags: "Tags",
+  tagsPlaceholder: "Comma separated e.g. sports,football",
+  featuredImage: "Featured image",
+  uploading: "Uploading...",
+  pleaseWait: "This may take a few seconds.",
+  changeImage: "Change image",
+  remove: "Remove",
+  changeImageHint: "Replace or remove the current image above.",
+  clickToUpload: "Click to upload",
+  dragAndDrop: "or drag and drop",
+  imageFormat: "PNG, JPG, GIF up to 5MB.",
+  published: "Published",
+  updating: "Updating...",
+  creating: "Creating...",
+  updatePost: "Update Post",
+  tableTitle: "Title",
+  tableCategory: "Category",
+  tableStatus: "Status",
+  tableDate: "Created",
+  tableActions: "Actions",
+  noPostsYet: "No posts yet.",
+  statusPublished: "Published",
+  statusDraft: "Draft",
+  edit: "Edit",
+  delete: "Delete",
+};
+
+type AdminTextKey = keyof typeof ADMIN_TEXT;
+
+const translateAdminText = (key: string): string => {
+  const normalizedKey = key.replace(/^admin\./, "") as AdminTextKey;
+  return ADMIN_TEXT[normalizedKey] ?? key;
+};
+
+export default function AdminPage() {
+  const t = translateAdminText;
+  
+  const postSchema = z.object({
+    title: z.string().min(1, t("admin.titleRequired")),
+    content: z.string().min(1, t("admin.contentRequired")),
+    excerpt: z.string().optional(),
+    published: z.boolean().default(false),
+    categoryId: z.string().optional(),
+    tags: z.string().optional(),
+    imageUrl: z.string().nullable().optional(),
+    creatorName: z.string().optional(),
+  });
 
 interface Post {
   id: string;
@@ -51,7 +126,8 @@ const saveEditToken = (slug: string, token: string) => {
   localStorage.setItem(`editToken_${slug}`, token);
 };
 
-export default function AdminPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [posts, setPosts] = useState<Post[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,6 +143,23 @@ export default function AdminPage() {
   const [createdPostSlug, setCreatedPostSlug] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Check authentication and role
+  useEffect(() => {
+    if (status === "loading") return; // Still loading
+
+    if (!session || !session.user) {
+      router.push("/login");
+      return;
+    }
+
+    const userRole = (session.user as any)?.role;
+    if (userRole !== "ADMIN" && userRole !== "SUPER_ADMIN") {
+      toast.error(t("admin.accessDenied"));
+      router.push("/");
+      return;
+    }
+  }, [session, status, router]);
 
   const {
     register,
@@ -111,14 +204,14 @@ export default function AdminPage() {
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+      alert(t("admin.imageTypeError"));
       return;
     }
 
     // Validate file size (max 5MB)
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
-      alert('Image size must be less than 5MB');
+      alert(t("admin.imageSizeError"));
       return;
     }
 
@@ -149,12 +242,12 @@ export default function AdminPage() {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error occurred' }));
         console.error('Upload failed:', errorData);
         const errorMessage = errorData.error || `Server error (${response.status})`;
-        alert(`Upload failed: ${errorMessage}`);
+        alert(`${t("admin.uploadFailed")}: ${errorMessage}`);
       }
     } catch (error: any) {
       console.error('Error uploading image:', error);
-      const errorMessage = error?.message || 'Network error. Please check your connection and try again.';
-      alert(`Failed to upload image: ${errorMessage}`);
+      const errorMessage = error?.message || t("admin.networkError");
+      alert(`${t("admin.uploadFailed")}: ${errorMessage}`);
     } finally {
       setUploadingImage(false);
       setUploadingFileName("");
@@ -244,17 +337,17 @@ export default function AdminPage() {
         
         // Show success toast
         if (editingPost) {
-          toast.success("Post updated successfully!");
+          toast.success(t("admin.postUpdated"));
         } else {
-          toast.success("Post created successfully!");
+          toast.success(t("admin.postCreated"));
         }
       } else {
         const error = await response.json();
-        toast.error(error.error || "Failed to save post");
+        toast.error(error.error || t("admin.failedToSave"));
       }
     } catch (error) {
       console.error("Error saving post:", error);
-      toast.error("Failed to save post. Please try again.");
+      toast.error(t("admin.failedToSave"));
     } finally {
       setIsSubmitting(false);
     }
@@ -275,7 +368,7 @@ export default function AdminPage() {
   };
 
   const handleDelete = async (slug: string) => {
-    if (!confirm("Are you sure you want to delete this post?")) return;
+    if (!confirm(t("admin.deleteConfirm"))) return;
 
     try {
       const response = await fetch(`/api/posts/${slug}`, {
@@ -287,13 +380,14 @@ export default function AdminPage() {
 
       if (response.ok) {
         fetchPosts();
+        toast.success(t("admin.postDeleted"));
       } else {
         const error = await response.json();
-        alert(`Failed to delete post: ${error.error || "Unknown error"}`);
+        alert(`${t("admin.failedToDelete")}: ${error.error || "Unknown error"}`);
       }
     } catch (error) {
       console.error("Error deleting post:", error);
-      alert("Failed to delete post");
+      alert(t("admin.failedToDelete"));
     }
   };
 
@@ -315,20 +409,31 @@ export default function AdminPage() {
         setShowCategoryForm(false);
         fetchCategories();
       } else {
-        alert("Failed to create category");
+        alert(t("admin.failedToCreateCategory"));
       }
     } catch (error) {
       console.error("Error creating category:", error);
-      alert("Failed to create category");
+      alert(t("admin.failedToCreateCategory"));
     }
   };
 
-  if (loading) {
+  // Show loading while checking auth
+  if (status === "loading" || loading) {
     return (
       <div className="container mx-auto px-4 py-12">
-        <div className="text-center">Loading...</div>
+        <div className="text-center">{t("admin.loading")}</div>
       </div>
     );
+  }
+
+  // Show unauthorized if not logged in or wrong role
+  if (!session || !session.user) {
+    return null; // Will redirect
+  }
+
+  const userRole = (session.user as any)?.role;
+  if (userRole !== "ADMIN" && userRole !== "SUPER_ADMIN") {
+    return null; // Will redirect
   }
 
   return (
@@ -338,10 +443,10 @@ export default function AdminPage() {
         {createdEditToken && createdPostSlug && (
           <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6">
             <h3 className="font-semibold text-green-800 dark:text-green-200 mb-2">
-              Post created successfully!
+              {t("admin.postCreated")}
             </h3>
             <p className="text-sm text-green-700 dark:text-green-300 mb-2">
-              Save this edit token to edit or delete your post later:
+              {t("admin.saveEditToken")}
             </p>
             <div className="bg-white dark:bg-gray-800 p-3 rounded border border-green-200 dark:border-green-700 mb-2">
               <code className="text-xs break-all text-gray-800 dark:text-gray-200">
@@ -349,7 +454,7 @@ export default function AdminPage() {
               </code>
             </div>
             <p className="text-xs text-green-600 dark:text-green-400">
-              This token has been saved to your browser&apos;s local storage.
+              {t("admin.editTokenSaved")}
             </p>
             <button
               onClick={() => {
@@ -358,13 +463,13 @@ export default function AdminPage() {
               }}
               className="mt-2 text-sm text-green-700 dark:text-green-300 hover:underline"
             >
-              Dismiss
+              {t("admin.dismiss")}
             </button>
           </div>
         )}
 
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Create & Manage Articles</h1>
+          <h1 className="text-3xl font-bold">{t("admin.title")}</h1>
           <div className="flex gap-3">
             <button
               onClick={() => {
@@ -373,7 +478,7 @@ export default function AdminPage() {
               }}
               className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
             >
-              {showCategoryForm ? "Cancel" : "New Category"}
+              {showCategoryForm ? t("admin.cancel") : t("admin.newCategory")}
             </button>
             <button
               onClick={() => {
@@ -386,7 +491,7 @@ export default function AdminPage() {
               }}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              {showForm ? "Cancel" : "New Post"}
+              {showForm ? t("admin.cancel") : t("admin.newPost")}
             </button>
           </div>
         </div>
@@ -396,13 +501,13 @@ export default function AdminPage() {
             onSubmit={handleCreateCategory}
             className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-8"
           >
-            <h2 className="text-xl font-semibold mb-4">Create Category</h2>
+            <h2 className="text-xl font-semibold mb-4">{t("admin.createCategory")}</h2>
             <div className="flex gap-3">
               <input
                 type="text"
                 value={newCategory}
                 onChange={(e) => setNewCategory(e.target.value)}
-                placeholder="Category name"
+                placeholder={t("admin.categoryName")}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
@@ -410,7 +515,7 @@ export default function AdminPage() {
                 type="submit"
                 className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
               >
-                Create
+                {t("admin.create")}
               </button>
             </div>
           </form>
@@ -422,11 +527,11 @@ export default function AdminPage() {
             className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-8"
           >
             <h2 className="text-xl font-semibold mb-4">
-              {editingPost ? "Edit Post" : "Create New Post"}
+              {editingPost ? t("admin.editPost") : t("admin.createNewPost")}
             </h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Title</label>
+                <label className="block text-sm font-medium mb-2">{t("admin.postTitle")}</label>
                 <input
                   type="text"
                   {...register("title")}
@@ -441,7 +546,7 @@ export default function AdminPage() {
 
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Content
+                  {t("admin.content")}
                 </label>
                 <textarea
                   {...register("content")}
@@ -457,7 +562,7 @@ export default function AdminPage() {
 
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Excerpt (optional)
+                  {t("admin.excerptOptional")}
                 </label>
                 <input
                   type="text"
@@ -468,28 +573,28 @@ export default function AdminPage() {
 
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Your Name (optional)
+                  {t("admin.yourName")}
                 </label>
                 <input
                   type="text"
                   {...register("creatorName")}
-                  placeholder="Enter your name to be displayed as the author"
+                  placeholder={t("admin.yourNamePlaceholder")}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  This will be shown as the author of the article
+                  {t("admin.yourNameHint")}
                 </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Category
+                  {t("admin.category")}
                 </label>
                 <select
                   {...register("categoryId")}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="">No Category</option>
+                  <option value="">{t("admin.noCategory")}</option>
                   {categories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
                       {cat.name}
@@ -500,19 +605,19 @@ export default function AdminPage() {
 
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Tags (comma-separated)
+                  {t("admin.tags")}
                 </label>
                 <input
                   type="text"
                   {...register("tags")}
-                  placeholder="react, nextjs, tutorial"
+                  placeholder={t("admin.tagsPlaceholder")}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Featured Image
+                  {t("admin.featuredImage")}
                 </label>
                 <div
                   onDragEnter={handleDrag}
@@ -538,13 +643,13 @@ export default function AdminPage() {
                         <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 dark:border-blue-800"></div>
                         <div className="animate-spin rounded-full h-12 w-12 border-4 border-t-blue-600 border-r-blue-600 absolute top-0 left-0"></div>
                       </div>
-                      <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Uploading image...</p>
+                      <p className="text-sm font-medium text-blue-600 dark:text-blue-400">{t("admin.uploading")}</p>
                       {uploadingFileName && (
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate max-w-xs">
                           {uploadingFileName}
                         </p>
                       )}
-                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Please wait</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">{t("admin.pleaseWait")}</p>
                     </div>
                   ) : imageUrl ? (
                     <div className="space-y-4">
@@ -569,7 +674,7 @@ export default function AdminPage() {
                           }}
                           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                         >
-                          Change Image
+                          {t("admin.changeImage")}
                         </button>
                         <button
                           type="button"
@@ -583,11 +688,11 @@ export default function AdminPage() {
                           }}
                           className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
                         >
-                          Remove
+                          {t("admin.remove")}
                         </button>
                       </div>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Click &quot;Change Image&quot; to replace or drag and drop a new image
+                        {t("admin.changeImageHint")}
                       </p>
                     </div>
                   ) : (
@@ -610,12 +715,12 @@ export default function AdminPage() {
                       </div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
                         <span className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium">
-                          Click to upload
+                          {t("admin.clickToUpload")}
                         </span>{" "}
-                        <span className="text-gray-600 dark:text-gray-400">or drag and drop</span>
+                        <span className="text-gray-600 dark:text-gray-400">{t("admin.dragAndDrop")}</span>
                       </div>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        PNG, JPG, GIF up to 5MB
+                        {t("admin.imageFormat")}
                       </p>
                     </div>
                   )}
@@ -640,7 +745,7 @@ export default function AdminPage() {
                   {...register("published")}
                   className="mr-2"
                 />
-                <label htmlFor="published">Published</label>
+                <label htmlFor="published">{t("admin.published")}</label>
               </div>
 
               <button
@@ -672,11 +777,11 @@ export default function AdminPage() {
                 )}
                 {isSubmitting
                   ? editingPost
-                    ? "Updating..."
-                    : "Creating..."
+                    ? t("admin.updating")
+                    : t("admin.creating")
                   : editingPost
-                  ? "Update Post"
-                  : "Create Post"}
+                  ? t("admin.updatePost")
+                  : t("admin.newPost")}
               </button>
             </div>
           </form>
@@ -687,19 +792,19 @@ export default function AdminPage() {
             <thead className="bg-gray-50 dark:bg-gray-900">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Title
+                  {t("admin.tableTitle")}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Category
+                  {t("admin.tableCategory")}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
+                  {t("admin.tableStatus")}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
+                  {t("admin.tableDate")}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
+                  {t("admin.tableActions")}
                 </th>
               </tr>
             </thead>
@@ -707,7 +812,7 @@ export default function AdminPage() {
               {posts.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
-                    No posts yet
+                    {t("admin.noPostsYet")}
                   </td>
                 </tr>
               ) : (
@@ -738,7 +843,7 @@ export default function AdminPage() {
                             : "bg-gray-100 text-gray-800"
                         }`}
                       >
-                        {post.published ? "Published" : "Draft"}
+                        {post.published ? t("admin.statusPublished") : t("admin.statusDraft")}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
@@ -750,13 +855,13 @@ export default function AdminPage() {
                           onClick={() => handleEdit(post)}
                           className="text-blue-600 hover:text-blue-800 text-sm"
                         >
-                          Edit
+                          {t("admin.edit")}
                         </button>
                         <button
                           onClick={() => handleDelete(post.slug)}
                           className="text-red-600 hover:text-red-800 text-sm"
                         >
-                          Delete
+                          {t("admin.delete")}
                         </button>
                       </div>
                     </td>

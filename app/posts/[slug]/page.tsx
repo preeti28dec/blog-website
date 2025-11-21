@@ -1,125 +1,70 @@
-import { notFound } from "next/navigation";
-import { getPostBySlug } from "@/lib/posts";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Metadata } from "next";
 import Image from "next/image";
 import SocialShare from "@/components/SocialShare";
 import CommentsSection from "@/components/CommentsSection";
 import LikeButton from "@/components/LikeButton";
 import PostMetadata from "@/components/PostMetadata";
 
-// Enable static generation with ISR (revalidate every 60 seconds)
-export const revalidate = 60;
+// Note: This is now a client component, so ISR is handled differently
 
-export async function generateMetadata({
-  params,
-}: {
-  params: { slug: string };
-}): Promise<Metadata> {
-  // Try to get post by slug first
-  let post = await getPostBySlug(params.slug);
+export default function PostPage() {
+  const params = useParams();
+  const router = useRouter();
+  const slug = params.slug as string;
+  const [post, setPost] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
-  // If not found by slug, try by ID (fallback)
-  if (!post && params.slug) {
-    try {
-      const { prisma } = await import("@/lib/prisma");
-      post = await prisma.post.findUnique({
-        where: { id: params.slug },
-        include: {
-          author: {
-            select: {
-              name: true,
-              email: true,
-            },
-          },
-          category: {
-            select: {
-              id: true,
-              name: true,
-              slug: true,
-            },
-          },
-        },
-      });
-    } catch (error) {
-      // Ignore error, will return not found metadata
-    }
-  }
-
-  if (!post) {
-    return {
-      title: "Post Not Found",
-    };
-  }
-
-  return {
-    title: post.title,
-    description: post.excerpt || post.content.substring(0, 160),
-    keywords: post.tags ? post.tags.split(",").map((t) => t.trim()) : [],
-    openGraph: {
-      title: post.title,
-      description: post.excerpt || post.content.substring(0, 160),
-      type: "article",
-      publishedTime: new Date(post.createdAt).toISOString(),
-      authors: [(post as any).creatorName || post.author?.name || post.author?.email || "Unknown"],
-      images: post.imageUrl ? [
-        {
-          url: post.imageUrl,
-          width: 1200,
-          height: 630,
-          alt: post.title,
+  useEffect(() => {
+    const fetchPost = async () => {
+      try {
+        const response = await fetch(`/api/posts/${slug}`);
+        if (response.ok) {
+          const data = await response.json();
+          setPost(data);
+        } else if (response.status === 404) {
+          setNotFound(true);
         }
-      ] : [],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: post.title,
-      description: post.excerpt || post.content.substring(0, 160),
-      images: post.imageUrl ? [post.imageUrl] : [],
-    },
-  };
-}
-
-export default async function PostPage({
-  params,
-}: {
-  params: { slug: string };
-}) {
-  // Try to get post by slug first
-  let post = await getPostBySlug(params.slug);
-
-  // If not found by slug, try by ID (fallback for old posts)
-  if (!post && params.slug) {
-    try {
-      const { prisma } = await import("@/lib/prisma");
-      post = await prisma.post.findUnique({
-        where: { id: params.slug },
-        include: {
-          author: {
-            select: {
-              name: true,
-              email: true,
-            },
-          },
-          category: {
-            select: {
-              id: true,
-              name: true,
-              slug: true,
-            },
-          },
-        },
-      });
-    } catch (error) {
-      console.error("Error fetching post by ID:", error);
+      } catch (error) {
+        console.error("Error fetching post:", error);
+        setNotFound(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (slug) {
+      fetchPost();
     }
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-12">
+        <div className="max-w-4xl mx-auto text-center">
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
   }
 
-  if (!post) {
-    notFound();
+  if (notFound || !post) {
+    return (
+      <div className="container mx-auto px-4 py-12">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-4xl font-bold mb-4">Post not found</h1>
+          <Link href="/" className="text-blue-600 dark:text-blue-400 hover:underline">
+            Back to posts
+          </Link>
+        </div>
+      </div>
+    );
   }
 
-  const postUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/posts/${params.slug}`;
+  const postUrl = typeof window !== "undefined" ? `${window.location.origin}/posts/${slug}` : `/posts/${slug}`;
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -128,7 +73,7 @@ export default async function PostPage({
           href="/"
           className="text-blue-600 dark:text-blue-400 hover:underline mb-6 inline-block"
         >
-          ← Back to posts
+          Back to posts
         </Link>
 
         <article className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 md:p-12">
@@ -147,11 +92,11 @@ export default async function PostPage({
 
           <div className="mb-4">
             <div className="flex items-center gap-4 mb-2 text-sm text-gray-600 dark:text-gray-400">
-              <span>By {(post as any).creatorName || post.author?.name || post.author?.email || "Unknown"}</span>
+              <span>By {(post as any).creatorName || post.author?.name || post.author?.email || "Unknown author"}</span>
               <span>•</span>
               <span>{new Date(post.createdAt).toLocaleDateString()}</span>
             </div>
-            <PostMetadata postSlug={params.slug} views={post.views || 0} />
+            <PostMetadata postSlug={slug} views={post.views || 0} />
           </div>
 
           {post.tags && (

@@ -152,7 +152,7 @@ export default function LikeButton({ postSlug }: LikeButtonProps) {
           : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
       } ${toggling ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
       style={{ pointerEvents: toggling ? "none" : "auto" }}
-      aria-label={hasLiked ? "Unlike this post" : "Like this post"}
+      aria-label={hasLiked ? "Unlike article" : "Like article"}
     >
       {hasLiked ? (
         <FaHeart className="w-5 h-5 fill-current" />

@@ -15,7 +15,7 @@ model User {
   name      String?
   email     String   @unique
   password  String
-  role      String   @default("USER") // USER or ADMIN
+  role      String   @default("PUBLIC") // SUPER_ADMIN, ADMIN, or PUBLIC
   posts     Post[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

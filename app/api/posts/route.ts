@@ -71,9 +71,16 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST create new post (public, no authentication required)
+// POST create new post (requires ADMIN or SUPER_ADMIN)
 export async function POST(request: NextRequest) {
   try {
+    // Check authentication and role
+    const { requireAdmin } = await import("@/lib/auth-helpers");
+    const authResult = await requireAdmin();
+    if (!authResult.authorized) {
+      return authResult.error;
+    }
+
     const body = await request.json();
     const validatedData = postSchema.parse(body);
 
@@ -135,6 +142,7 @@ export async function POST(request: NextRequest) {
       published: validatedData.published ?? false,
       tags: validatedData.tags || "",
       editToken: editToken,
+      authorId: authResult.user.id, // Associate post with logged-in admin
     };
 
     // Add optional fields only if they have values

@@ -25,7 +25,7 @@ export default function SocialShare({ title, url, description }: SocialShareProp
   return (
     <div className="flex gap-3 items-center py-4 border-t border-b border-gray-200 dark:border-gray-700 my-8">
       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-        Share:
+        Share this article
       </span>
       <button
         onClick={() => handleShare("twitter")}

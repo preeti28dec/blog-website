@@ -61,12 +61,19 @@ export async function GET(
   }
 }
 
-// PUT update post
+// PUT update post (requires ADMIN or SUPER_ADMIN)
 export async function PUT(
   request: NextRequest,
   { params }: { params: { slug: string } }
 ) {
   try {
+    // Check authentication and role
+    const { requireAdmin } = await import("@/lib/auth-helpers");
+    const authResult = await requireAdmin();
+    if (!authResult.authorized) {
+      return authResult.error;
+    }
+
     const body = await request.json();
     const validatedData = updatePostSchema.parse(body);
 
@@ -138,12 +145,19 @@ export async function PUT(
   }
 }
 
-// DELETE post
+// DELETE post (requires ADMIN or SUPER_ADMIN)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { slug: string } }
 ) {
   try {
+    // Check authentication and role
+    const { requireAdmin } = await import("@/lib/auth-helpers");
+    const authResult = await requireAdmin();
+    if (!authResult.authorized) {
+      return authResult.error;
+    }
+
     const post = await prisma.post.findUnique({
       where: { slug: params.slug },
     });

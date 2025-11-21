@@ -1,7 +1,7 @@
 "use client";
 
 import { FaMoon, FaSun } from "react-icons/fa";
-import { useTheme, useTranslation } from "./Providers";
+import { useTheme } from "./Providers";
 
 type ThemeToggleProps = {
   className?: string;
@@ -13,14 +13,11 @@ export default function ThemeToggle({
   showLabel = false,
 }: ThemeToggleProps) {
   const { theme, toggleTheme, isReady } = useTheme();
-  const { t } = useTranslation();
 
   const isDark = theme === "dark";
   const Icon = isDark ? FaSun : FaMoon;
-  const buttonLabel = t(isDark ? "theme.switchToLight" : "theme.switchToDark");
-  const label = isReady
-    ? t(isDark ? "theme.lightMode" : "theme.darkMode")
-    : t("theme.label");
+  const buttonLabel = isDark ? "Switch to light mode" : "Switch to dark mode";
+  const label = isReady ? (isDark ? "Light mode" : "Dark mode") : "Theme";
 
   return (
     <button

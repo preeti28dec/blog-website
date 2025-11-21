@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-
 export default function ContactPage() {
   const [formData, setFormData] = useState({
     name: "",
@@ -33,11 +32,11 @@ export default function ContactPage() {
           setSubmitted(false);
         }, 5000);
       } else {
-        alert(data.error || "Failed to send message. Please try again.");
+        alert(data.error || "Failed to send your message.");
       }
     } catch (error) {
       console.error("Error submitting contact form:", error);
-      alert("An error occurred. Please try again later.");
+      alert("Something went wrong. Please try again later.");
     } finally {
       setIsSubmitting(false);
     }
@@ -60,10 +59,10 @@ export default function ContactPage() {
             {/* Left Section - Contact Form */}
             <div className="p-8 md:p-12 bg-white dark:bg-gray-800">
               <h1 className="text-4xl md:text-5xl font-bold text-purple-600 dark:text-purple-400 mb-3">
-                Get In Touch
+                Get in touch
               </h1>
               <p className="text-gray-600 dark:text-gray-400 mb-8 text-lg">
-                We are here for you! How can we help?
+                Have questions or feedback? Send us a message and we’ll get back to you soon.
               </p>
 
               {submitted ? (
@@ -83,7 +82,7 @@ export default function ContactPage() {
                       />
                     </svg>
                     <p className="font-semibold">
-                      Thank you for your message! We&apos;ll get back to you soon.
+                      Thank you! Your message has been sent.
                     </p>
                   </div>
                 </div>
@@ -97,7 +96,7 @@ export default function ContactPage() {
                       value={formData.name}
                       onChange={handleChange}
                       required
-                      placeholder="Enter your name"
+                      placeholder="Your name"
                       className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all"
                     />
                   </div>
@@ -110,7 +109,7 @@ export default function ContactPage() {
                       value={formData.email}
                       onChange={handleChange}
                       required
-                      placeholder="Enter your email address"
+                      placeholder="you@example.com"
                       className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all"
                     />
                   </div>
@@ -123,7 +122,7 @@ export default function ContactPage() {
                       onChange={handleChange}
                       required
                       rows={5}
-                      placeholder="Go ahead, we are listening..."
+                      placeholder="How can we help?"
                       className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none transition-all"
                     />
                   </div>
@@ -133,7 +132,7 @@ export default function ContactPage() {
                     disabled={isSubmitting}
                     className="w-full px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isSubmitting ? "Submitting..." : "Submit"}
+                    {isSubmitting ? "Sending..." : "Send Message"}
                   </button>
                 </form>
               )}
@@ -329,7 +328,7 @@ export default function ContactPage() {
                       />
                     </svg>
                   </div>
-                  <span className="text-base font-medium">674 Washington Avenue</span>
+                  <span className="text-base font-medium">New Delhi, India</span>
                 </div>
 
                 <div className="flex items-center gap-4 text-gray-700 dark:text-gray-300">
@@ -348,7 +347,7 @@ export default function ContactPage() {
                       />
                     </svg>
                   </div>
-                  <span className="text-base font-medium">602-216-4143</span>
+                  <span className="text-base font-medium">+91 98765 43210</span>
                 </div>
 
                 <div className="flex items-center gap-4 text-gray-700 dark:text-gray-300">

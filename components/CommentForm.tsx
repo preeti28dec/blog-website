@@ -6,12 +6,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import toast from "react-hot-toast";
 
-const commentSchema = z.object({
-  authorName: z.string().min(1, "Name is required"),
-  authorEmail: z.string().email("Invalid email address"),
-  content: z.string().min(1, "Comment cannot be empty"),
-});
-
 interface CommentFormProps {
   postSlug: string;
   onCommentAdded: () => void;
@@ -19,6 +13,12 @@ interface CommentFormProps {
 
 export default function CommentForm({ postSlug, onCommentAdded }: CommentFormProps) {
   const [loading, setLoading] = useState(false);
+  
+  const commentSchema = z.object({
+    authorName: z.string().min(1, "Name is required."),
+    authorEmail: z.string().email("Please enter a valid email address."),
+    content: z.string().min(1, "Comment cannot be empty."),
+  });
 
   const {
     register,
@@ -42,7 +42,7 @@ export default function CommentForm({ postSlug, onCommentAdded }: CommentFormPro
       });
 
       if (response.ok) {
-        toast.success("Comment submitted successfully!");
+        toast.success("Comment submitted!");
         reset();
         onCommentAdded();
         // Dispatch custom event to update comment count in metadata
@@ -51,10 +51,10 @@ export default function CommentForm({ postSlug, onCommentAdded }: CommentFormPro
         }
       } else {
         const errorData = await response.json();
-        toast.error(errorData.error || "Failed to submit comment");
+        toast.error(errorData.error || "Failed to submit comment.");
       }
     } catch (error) {
-      toast.error("An error occurred. Please try again.");
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -62,7 +62,7 @@ export default function CommentForm({ postSlug, onCommentAdded }: CommentFormPro
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-8">
-      <h3 className="text-xl font-semibold mb-4">Leave a Comment</h3>
+      <h3 className="text-xl font-semibold mb-4">Leave a comment</h3>
 
       <div className="grid md:grid-cols-2 gap-4">
         <div>

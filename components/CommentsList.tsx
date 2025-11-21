@@ -48,12 +48,12 @@ export default function CommentsList({ postSlug, postTitle, refreshTrigger }: Co
       </h3>
       {postTitle && (
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          Comments on: <span className="font-semibold text-gray-900 dark:text-white">{postTitle}</span>
+          Comments on <span className="font-semibold text-gray-900 dark:text-white">{postTitle}</span>
         </p>
       )}
 
       {comments.length === 0 ? (
-        <p className="text-gray-500">No comments yet. Be the first to comment!</p>
+        <p className="text-gray-500">No comments yet.</p>
       ) : (
         <div className="space-y-6">
           {comments.map((comment) => (

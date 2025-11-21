@@ -155,7 +155,7 @@ export default function PostMetadata({ postSlug, views }: PostMetadataProps) {
             d="M12 9a3 3 0 100 6 3 3 0 000-6z"
           />
         </svg>
-        {views || 0} views
+        {views || 0} {(views || 0) === 1 ? "view" : "views"}
       </span>
       
       <button
@@ -167,7 +167,7 @@ export default function PostMetadata({ postSlug, views }: PostMetadataProps) {
             ? "text-red-600 dark:text-red-400"
             : "text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400"
         } ${toggling || loading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-        aria-label={hasLiked ? "Unlike this post" : "Like this post"}
+        aria-label={hasLiked ? "Unlike article" : "Like article"}
       >
         {loading ? (
           <FaRegHeart className="w-4 h-4 animate-pulse" />
