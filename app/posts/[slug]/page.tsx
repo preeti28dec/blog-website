@@ -101,7 +101,7 @@ export default function PostPage() {
 
           {post.tags && (
             <div className="flex flex-wrap gap-2 mb-6">
-              {post.tags.split(",").map((tag, idx) => (
+              {post.tags.split(",").map((tag: string, idx: number) => (
                 <span
                   key={idx}
                   className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm rounded"
