@@ -1,8 +1,23 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "./auth-config";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 export type UserRole = "SUPER_ADMIN" | "ADMIN" | "PUBLIC";
+
+export type AuthenticatedUser = {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+  role?: UserRole;
+};
+
+function isAuthenticatedUser(user: unknown): user is AuthenticatedUser {
+  return Boolean(
+    user &&
+    typeof (user as Record<string, unknown>).id === "string"
+  );
+}
 
 export async function getCurrentUser() {
   const session = await getServerSession(authOptions);
@@ -19,11 +34,22 @@ export function hasRole(userRole: UserRole | null | undefined, requiredRoles: Us
   return requiredRoles.includes(userRole);
 }
 
-export async function requireAuth(requiredRoles: UserRole[] = ["ADMIN", "SUPER_ADMIN"]) {
+type UnauthorizedResponse = {
+  authorized: false;
+  error: ReturnType<typeof NextResponse.json>;
+};
+
+type AuthorizedResponse = {
+  authorized: true;
+  user: AuthenticatedUser;
+  role: UserRole;
+};
+
+export async function requireAuth(requiredRoles: UserRole[] = ["ADMIN", "SUPER_ADMIN"]): Promise<UnauthorizedResponse | AuthorizedResponse> {
   const user = await getCurrentUser();
   const role = (user as any)?.role as UserRole | undefined;
 
-  if (!user || !role) {
+  if (!isAuthenticatedUser(user) || !role) {
     return {
       authorized: false,
       error: NextResponse.json({ error: "Unauthorized - Login required" }, { status: 401 }),
