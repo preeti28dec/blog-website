@@ -80,6 +80,13 @@ export async function POST(request: NextRequest) {
     if (!authResult.authorized) {
       return authResult.error;
     }
+    
+    if (!authResult.user) {
+      return NextResponse.json(
+        { error: "Authenticated user not found" },
+        { status: 500 }
+      );
+    }
 
     const body = await request.json();
     const validatedData = postSchema.parse(body);
