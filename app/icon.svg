@@ -1,0 +1,29 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="tslGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f15ac7"/>
+      <stop offset="45%" stop-color="#c121a0"/>
+      <stop offset="75%" stop-color="#7b0ba3"/>
+      <stop offset="100%" stop-color="#4b0098"/>
+    </linearGradient>
+    <radialGradient id="tslHighlight" cx="70%" cy="25%" r="60%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="256" cy="256" r="240" fill="url(#tslGradient)"/>
+  <circle cx="256" cy="256" r="230" fill="url(#tslHighlight)" opacity="0.55"/>
+  <text
+    x="50%"
+    y="50%"
+    dominant-baseline="middle"
+    text-anchor="middle"
+    font-family="'Poppins', 'Inter', 'Segoe UI', sans-serif"
+    font-weight="800"
+    font-size="170"
+    letter-spacing="35"
+    fill="#ffffff">
+    TSL
+  </text>
+</svg>
+

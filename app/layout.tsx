@@ -10,6 +10,9 @@ export const metadata: Metadata = {
   description: "Toptiersportsledger is your modern sports ledger for premium articles, insights, and analysis powered by Next.js.",
   keywords: "Toptiersportsledger, sports ledger, articles, nextjs, react",
   authors: [{ name: "Toptiersportsledger" }],
+  icons: {
+    icon: "/icon.svg",
+  },
   openGraph: {
     title: "Toptiersportsledger",
     description: "Explore Toptiersportsledger for premium sports stories and analysis.",
