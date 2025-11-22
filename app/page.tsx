@@ -9,24 +9,59 @@ import CategoryFilter from "@/components/CategoryFilter";
 // Enable static generation with ISR (revalidate every 60 seconds)
 // Note: This is now a client component, so ISR is handled differently
 
+const normalizeToArray = (data: any) => {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.posts)) return data.posts;
+  if (Array.isArray(data?.data)) return data.data;
+  return [];
+};
+
+async function fetchJsonOrThrow(response: Response) {
+  let payload: any = null;
+  try {
+    payload = await response.json();
+  } catch {
+    // Ignore JSON parse errors so we can still throw a useful message below.
+  }
+
+  if (!response.ok) {
+    const errorMessage =
+      (payload && (payload.error || payload.message)) ||
+      `Request failed with status ${response.status}`;
+    throw new Error(errorMessage);
+  }
+
+  return payload;
+}
+
 function HomeContent() {
   const searchParams = useSearchParams();
   const category = searchParams.get("category") || undefined;
   const [posts, setPosts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setLoading(true);
     const fetchData = async () => {
       try {
-        const postsRes = await fetch(category ? `/api/posts?category=${category}` : "/api/posts");
-        const categoriesRes = await fetch("/api/categories");
-        const postsData = await postsRes.json();
-        const categoriesData = await categoriesRes.json();
-        setPosts(postsData);
-        setCategories(categoriesData);
+        setError(null);
+        const [postsRes, categoriesRes] = await Promise.all([
+          fetch(category ? `/api/posts?category=${category}` : "/api/posts"),
+          fetch("/api/categories"),
+        ]);
+
+        const postsData = await fetchJsonOrThrow(postsRes);
+        const categoriesData = await fetchJsonOrThrow(categoriesRes);
+
+        setPosts(normalizeToArray(postsData));
+        setCategories(normalizeToArray(categoriesData));
       } catch (error) {
         console.error("Error fetching data:", error);
+        setError(error instanceof Error ? error.message : "Failed to load data");
+        setPosts([]);
+        setCategories([]);
       } finally {
         setLoading(false);
       }
@@ -43,7 +78,12 @@ function HomeContent() {
         />
 
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 mt-8">
-          {loading ? (
+          {error ? (
+            <div className="col-span-full text-center py-12">
+              <p className="text-red-500 text-lg">Failed to load posts.</p>
+              <p className="text-gray-500 text-sm mt-2">{error}</p>
+            </div>
+          ) : loading ? (
             <div className="col-span-full text-center py-12">
               <p className="text-gray-500 text-lg">Loading...</p>
             </div>

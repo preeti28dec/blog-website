@@ -12,7 +12,8 @@
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
     "db:seed": "prisma db seed",
-    "create-super-admin": "node scripts/create-super-admin.js"
+    "create-super-admin": "node scripts/create-super-admin.js",
+    "verify:integrations": "tsx scripts/verify-integrations.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",

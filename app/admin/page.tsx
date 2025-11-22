@@ -21,6 +21,7 @@ const ADMIN_TEXT = {
   postUpdated: "Post updated successfully!",
   postCreated: "Post created successfully!",
   failedToSave: "Failed to save post.",
+  failedToLoadPosts: "Failed to load posts.",
   deleteConfirm: "Are you sure you want to delete this post?",
   postDeleted: "Post deleted.",
   failedToDelete: "Failed to delete post.",
@@ -80,6 +81,31 @@ const translateAdminText = (key: string): string => {
   return ADMIN_TEXT[normalizedKey] ?? key;
 };
 
+const normalizeToArray = <T,>(data: any): T[] => {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.posts)) return data.posts;
+  if (Array.isArray(data?.data)) return data.data;
+  return [];
+};
+
+const fetchJsonOrThrow = async (response: Response) => {
+  let payload: any = null;
+  try {
+    payload = await response.json();
+  } catch {
+    // Ignore parse errors; let status handling show useful info.
+  }
+
+  if (!response.ok) {
+    const message =
+      (payload && (payload.error || payload.message)) ||
+      `Request failed with status ${response.status}`;
+    throw new Error(message);
+  }
+
+  return payload ?? {};
+};
+
 export default function AdminPage() {
   const t = translateAdminText;
   
@@ -131,6 +157,7 @@ const saveEditToken = (slug: string, token: string) => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [postsError, setPostsError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
@@ -173,30 +200,41 @@ const saveEditToken = (slug: string, token: string) => {
 
   const fetchPosts = async () => {
     try {
+      setPostsError(null);
       const response = await fetch("/api/posts");
-      const data = await response.json();
-      setPosts(data);
+      const data = await fetchJsonOrThrow(response);
+      setPosts(normalizeToArray<Post>(data));
     } catch (error) {
       console.error("Error fetching posts:", error);
-    } finally {
-      setLoading(false);
+      setPosts([]);
+      setPostsError(
+        error instanceof Error ? error.message : t("admin.failedToSave")
+      );
     }
   };
 
   const fetchCategories = async () => {
     try {
       const response = await fetch("/api/categories");
-      const data = await response.json();
-      setCategories(data);
+      const data = await fetchJsonOrThrow(response);
+      setCategories(normalizeToArray<Category>(data));
     } catch (error) {
       console.error("Error fetching categories:", error);
+      setCategories([]);
     }
   };
 
   // Load posts and categories on mount
   useEffect(() => {
-    fetchPosts();
-    fetchCategories();
+    const load = async () => {
+      setLoading(true);
+      try {
+        await Promise.all([fetchPosts(), fetchCategories()]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, []);
 
   const handleImageUpload = async (file: File) => {
@@ -809,7 +847,16 @@ const saveEditToken = (slug: string, token: string) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {posts.length === 0 ? (
+              {postsError ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-4 text-center">
+                    <p className="text-red-500">{t("admin.failedToLoadPosts")}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      {postsError}
+                    </p>
+                  </td>
+                </tr>
+              ) : posts.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
                     {t("admin.noPostsYet")}
