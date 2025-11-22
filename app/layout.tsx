@@ -6,13 +6,13 @@ import Navbar from "@/components/Navbar";
 import Providers from "@/components/Providers";
 
 export const metadata: Metadata = {
-  title: "Article Website - Modern Article Platform",
-  description: "A modern article platform built with Next.js. Write, edit, and share your stories with the world.",
-  keywords: "article, articles, writing, nextjs, react",
-  authors: [{ name: "Article Website" }],
+  title: "Toptiersportsledger | Modern Sports Ledger",
+  description: "Toptiersportsledger is your modern sports ledger for premium articles, insights, and analysis powered by Next.js.",
+  keywords: "Toptiersportsledger, sports ledger, articles, nextjs, react",
+  authors: [{ name: "Toptiersportsledger" }],
   openGraph: {
-    title: "Article Website",
-    description: "A modern article platform built with Next.js",
+    title: "Toptiersportsledger",
+    description: "Explore Toptiersportsledger for premium sports stories and analysis.",
     type: "website",
   },
 };
