@@ -4,14 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { PROFILE_KEY, defaultProfileRecord } from "@/lib/profile";
 import { revalidatePath } from "next/cache";
 
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: "8mb",
-    },
-  },
-};
-
 const profileSchema = z.object({
   imageUrl: z
     .string()
