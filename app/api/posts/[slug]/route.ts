@@ -40,17 +40,12 @@ export async function GET(
       },
     });
 
-    // Increment view count
-    if (post) {
-      await prisma.post.update({
-        where: { id: post.id },
-        data: { views: { increment: 1 } },
-      });
-    }
-
     if (!post) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
+
+    // Note: View count is now handled separately via /api/posts/[slug]/views endpoint
+    // This prevents auto-incrementing on every GET request
 
     return NextResponse.json(post);
   } catch (error) {

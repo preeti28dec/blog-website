@@ -50,6 +50,7 @@ model Post {
   imageUrl   String?    // Cloudinary image URL
   comments   Comment[]
   likes      Like[]
+  postViews  View[]
   views      Int        @default(0)
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
@@ -87,6 +88,22 @@ model Like {
   @@index([postId, userIp])
   @@index([postId, userEmail])
   @@map("likes")
+}
+
+model View {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  postId    String   @db.ObjectId
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userIp    String?  // Track by IP for public users
+  userEmail String?  // Track by email if logged in
+  clientId  String?  // Track by clientId for cases where IP is unknown
+  createdAt DateTime @default(now())
+
+  @@index([postId])
+  @@index([postId, userIp])
+  @@index([postId, userEmail])
+  @@index([postId, clientId])
+  @@map("views")
 }
 
 model Profile {

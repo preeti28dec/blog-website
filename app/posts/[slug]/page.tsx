@@ -26,6 +26,45 @@ export default function PostPage() {
         if (response.ok) {
           const data = await response.json();
           setPost(data);
+          
+          // Track view count - only increment on first visit
+          if (typeof window !== "undefined") {
+            const viewKey = `view_${slug}`;
+            const hasViewed = localStorage.getItem(viewKey);
+            
+            if (!hasViewed) {
+              // Get or create a client identifier for tracking views
+              let clientId = localStorage.getItem("clientId");
+              if (!clientId) {
+                clientId = `client-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                localStorage.setItem("clientId", clientId);
+              }
+              
+              // Mark as viewed in localStorage first to prevent duplicate calls
+              localStorage.setItem(viewKey, "true");
+              
+              // Call the view increment endpoint
+              try {
+                await fetch(`/api/posts/${slug}/views`, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({ clientId }),
+                });
+                
+                // Update the view count in the post data
+                setPost((prevPost: any) => ({
+                  ...prevPost,
+                  views: (prevPost?.views || 0) + 1,
+                }));
+              } catch (error) {
+                console.error("Error incrementing view:", error);
+                // If the API call fails, remove the localStorage flag so it can retry
+                localStorage.removeItem(viewKey);
+              }
+            }
+          }
         } else if (response.status === 404) {
           setNotFound(true);
         }
