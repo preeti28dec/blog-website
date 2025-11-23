@@ -13,6 +13,11 @@ export const metadata: Metadata = {
   icons: {
     icon: "/icon.svg",
   },
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 5,
+  },
   openGraph: {
     title: "Toptiersportsledger",
     description: "Explore Toptiersportsledger for premium sports stories and analysis.",

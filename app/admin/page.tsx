@@ -458,8 +458,8 @@ const saveEditToken = (slug: string, token: string) => {
   // Show loading while checking auth
   if (status === "loading" || loading) {
     return (
-      <div className="container mx-auto px-4 py-12">
-        <div className="text-center">{t("admin.loading")}</div>
+      <div className="container mx-auto px-3 sm:px-4 md:px-6 py-6 sm:py-8 md:py-12">
+        <div className="text-center text-sm sm:text-base">{t("admin.loading")}</div>
       </div>
     );
   }
@@ -475,18 +475,18 @@ const saveEditToken = (slug: string, token: string) => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-12">
+    <div className="container mx-auto px-3 sm:px-4 md:px-6 py-6 sm:py-8 md:py-12">
       <div className="max-w-6xl mx-auto">
         {/* Show edit token after creating a post */}
         {createdEditToken && createdPostSlug && (
-          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6">
-            <h3 className="font-semibold text-green-800 dark:text-green-200 mb-2">
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+            <h3 className="font-semibold text-green-800 dark:text-green-200 mb-2 text-sm sm:text-base">
               {t("admin.postCreated")}
             </h3>
-            <p className="text-sm text-green-700 dark:text-green-300 mb-2">
+            <p className="text-xs sm:text-sm text-green-700 dark:text-green-300 mb-2">
               {t("admin.saveEditToken")}
             </p>
-            <div className="bg-white dark:bg-gray-800 p-3 rounded border border-green-200 dark:border-green-700 mb-2">
+            <div className="bg-white dark:bg-gray-800 p-2 sm:p-3 rounded border border-green-200 dark:border-green-700 mb-2">
               <code className="text-xs break-all text-gray-800 dark:text-gray-200">
                 {createdEditToken}
               </code>
@@ -499,22 +499,22 @@ const saveEditToken = (slug: string, token: string) => {
                 setCreatedEditToken(null);
                 setCreatedPostSlug(null);
               }}
-              className="mt-2 text-sm text-green-700 dark:text-green-300 hover:underline"
+              className="mt-2 text-xs sm:text-sm text-green-700 dark:text-green-300 hover:underline"
             >
               {t("admin.dismiss")}
             </button>
           </div>
         )}
 
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">{t("admin.title")}</h1>
-          <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold">{t("admin.title")}</h1>
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
             <button
               onClick={() => {
                 setShowCategoryForm(!showCategoryForm);
                 setShowForm(false);
               }}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              className="px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm sm:text-base"
             >
               {showCategoryForm ? t("admin.cancel") : t("admin.newCategory")}
             </button>
@@ -527,31 +527,32 @@ const saveEditToken = (slug: string, token: string) => {
                 setDragActive(false);
                 setShowCategoryForm(false);
               }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
             >
               {showForm ? t("admin.cancel") : t("admin.newPost")}
             </button>
           </div>
         </div>
 
+        
         {showCategoryForm && (
           <form
             onSubmit={handleCreateCategory}
-            className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-8"
+            className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-md mb-6 sm:mb-8"
           >
-            <h2 className="text-xl font-semibold mb-4">{t("admin.createCategory")}</h2>
-            <div className="flex gap-3">
+            <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">{t("admin.createCategory")}</h2>
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <input
                 type="text"
                 value={newCategory}
                 onChange={(e) => setNewCategory(e.target.value)}
                 placeholder={t("admin.categoryName")}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="flex-1 px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                 required
               />
               <button
                 type="submit"
-                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                className="px-4 sm:px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm sm:text-base"
               >
                 {t("admin.create")}
               </button>
@@ -562,62 +563,62 @@ const saveEditToken = (slug: string, token: string) => {
         {showForm && (
           <form
             onSubmit={handleSubmit(onSubmit)}
-            className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-8"
+            className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-md mb-6 sm:mb-8"
           >
-            <h2 className="text-xl font-semibold mb-4">
+            <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">
               {editingPost ? t("admin.editPost") : t("admin.createNewPost")}
             </h2>
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">{t("admin.postTitle")}</label>
+                <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">{t("admin.postTitle")}</label>
                 <input
                   type="text"
                   {...register("title")}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                 />
                 {errors.title && (
-                  <p className="text-red-500 text-sm mt-1">
+                  <p className="text-red-500 text-xs sm:text-sm mt-1">
                     {errors.title.message as string}
                   </p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
                   {t("admin.content")}
                 </label>
                 <textarea
                   {...register("content")}
-                  rows={10}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows={8}
+                  className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                 />
                 {errors.content && (
-                  <p className="text-red-500 text-sm mt-1">
+                  <p className="text-red-500 text-xs sm:text-sm mt-1">
                     {errors.content.message as string}
                   </p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
                   {t("admin.excerptOptional")}
                 </label>
                 <input
                   type="text"
                   {...register("excerpt")}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
                   {t("admin.yourName")}
                 </label>
                 <input
                   type="text"
                   {...register("creatorName")}
                   placeholder={t("admin.yourNamePlaceholder")}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   {t("admin.yourNameHint")}
@@ -625,12 +626,12 @@ const saveEditToken = (slug: string, token: string) => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
                   {t("admin.category")}
                 </label>
                 <select
                   {...register("categoryId")}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                 >
                   <option value="">{t("admin.noCategory")}</option>
                   {categories.map((cat) => (
@@ -642,19 +643,19 @@ const saveEditToken = (slug: string, token: string) => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
                   {t("admin.tags")}
                 </label>
                 <input
                   type="text"
                   {...register("tags")}
                   placeholder={t("admin.tagsPlaceholder")}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
                   {t("admin.featuredImage")}
                 </label>
                 <div
@@ -667,7 +668,7 @@ const saveEditToken = (slug: string, token: string) => {
                       fileInputRef.current.click();
                     }
                   }}
-                  className={`border-2 border-dashed rounded-lg p-6 text-center transition-all duration-200 ${
+                  className={`border-2 border-dashed rounded-lg p-4 sm:p-6 text-center transition-all duration-200 ${
                     uploadingImage
                       ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
                       : dragActive
@@ -789,7 +790,7 @@ const saveEditToken = (slug: string, token: string) => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="w-full sm:w-auto px-4 sm:px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
               >
                 {isSubmitting && (
                   <svg
@@ -826,54 +827,55 @@ const saveEditToken = (slug: string, token: string) => {
         )}
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-900">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t("admin.tableTitle")}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t("admin.tableCategory")}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t("admin.tableStatus")}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t("admin.tableDate")}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t("admin.tableActions")}
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px]">
+              <thead className="bg-gray-50 dark:bg-gray-900">
+                <tr>
+                  <th className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t("admin.tableTitle")}
+                  </th>
+                  <th className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t("admin.tableCategory")}
+                  </th>
+                  <th className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t("admin.tableStatus")}
+                  </th>
+                  <th className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t("admin.tableDate")}
+                  </th>
+                  <th className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t("admin.tableActions")}
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {postsError ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center">
-                    <p className="text-red-500">{t("admin.failedToLoadPosts")}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  <td colSpan={5} className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-center">
+                    <p className="text-red-500 text-sm sm:text-base">{t("admin.failedToLoadPosts")}</p>
+                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
                       {postsError}
                     </p>
                   </td>
                 </tr>
               ) : posts.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan={5} className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-center text-gray-500 text-sm sm:text-base">
                     {t("admin.noPostsYet")}
                   </td>
                 </tr>
               ) : (
                 posts.map((post) => (
                   <tr key={post.id}>
-                    <td className="px-6 py-4">
+                    <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
                       <Link
                         href={`/posts/${post.slug || post.id}`}
-                        className="text-blue-600 dark:text-blue-400 hover:underline font-medium cursor-pointer"
+                        className="text-blue-600 dark:text-blue-400 hover:underline font-medium cursor-pointer text-xs sm:text-sm break-words"
                       >
                         {post.title}
                       </Link>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
                       {post.category ? (
                         <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded">
                           {post.category.name}
@@ -882,7 +884,7 @@ const saveEditToken = (slug: string, token: string) => {
                         <span className="text-gray-400">-</span>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
                       <span
                         className={`px-2 py-1 text-xs rounded-full ${
                           post.published
@@ -893,20 +895,20 @@ const saveEditToken = (slug: string, token: string) => {
                         {post.published ? t("admin.statusPublished") : t("admin.statusDraft")}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
+                    <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-500">
                       {new Date(post.createdAt).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex gap-2">
+                    <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+                      <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
                         <button
                           onClick={() => handleEdit(post)}
-                          className="text-blue-600 hover:text-blue-800 text-sm"
+                          className="text-blue-600 hover:text-blue-800 text-xs sm:text-sm text-left sm:text-center"
                         >
                           {t("admin.edit")}
                         </button>
                         <button
                           onClick={() => handleDelete(post.slug)}
-                          className="text-red-600 hover:text-red-800 text-sm"
+                          className="text-red-600 hover:text-red-800 text-xs sm:text-sm text-left sm:text-center"
                         >
                           {t("admin.delete")}
                         </button>
@@ -916,7 +918,8 @@ const saveEditToken = (slug: string, token: string) => {
                 ))
               )}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
       </div>
     </div>

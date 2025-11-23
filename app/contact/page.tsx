@@ -52,24 +52,24 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-purple-100 dark:from-gray-900 dark:to-gray-800 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-purple-100 dark:from-gray-900 dark:to-gray-800 py-6 sm:py-8 md:py-12 px-3 sm:px-4">
       <div className="max-w-6xl mx-auto">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-2xl overflow-hidden">
           <div className="grid md:grid-cols-2 gap-0">
             {/* Left Section - Contact Form */}
-            <div className="p-8 md:p-12 bg-white dark:bg-gray-800">
-              <h1 className="text-4xl md:text-5xl font-bold text-purple-600 dark:text-purple-400 mb-3">
+            <div className="p-4 sm:p-6 md:p-8 lg:p-12 bg-white dark:bg-gray-800">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-purple-600 dark:text-purple-400 mb-2 sm:mb-3">
                 Get in touch
               </h1>
-              <p className="text-gray-600 dark:text-gray-400 mb-8 text-lg">
-                Have questions or feedback? Send us a message and we’ll get back to you soon.
+              <p className="text-sm sm:text-base md:text-lg text-gray-600 dark:text-gray-400 mb-6 sm:mb-8">
+                Have questions or feedback? Send us a message and we'll get back to you soon.
               </p>
 
               {submitted ? (
-                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-400 p-6 rounded-lg">
-                  <div className="flex items-center gap-3">
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-400 p-4 sm:p-6 rounded-lg">
+                  <div className="flex items-center gap-2 sm:gap-3">
                     <svg
-                      className="w-6 h-6"
+                      className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -81,13 +81,13 @@ export default function ContactPage() {
                         d="M5 13l4 4L19 7"
                       />
                     </svg>
-                    <p className="font-semibold">
+                    <p className="font-semibold text-sm sm:text-base">
                       Thank you! Your message has been sent.
                     </p>
                   </div>
                 </div>
               ) : (
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
                   <div>
                     <input
                       type="text"
@@ -97,7 +97,7 @@ export default function ContactPage() {
                       onChange={handleChange}
                       required
                       placeholder="Your name"
-                      className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all text-sm sm:text-base"
                     />
                   </div>
 
@@ -110,7 +110,7 @@ export default function ContactPage() {
                       onChange={handleChange}
                       required
                       placeholder="you@example.com"
-                      className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all text-sm sm:text-base"
                     />
                   </div>
 
@@ -123,14 +123,14 @@ export default function ContactPage() {
                       required
                       rows={5}
                       placeholder="How can we help?"
-                      className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none transition-all"
+                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none transition-all text-sm sm:text-base"
                     />
                   </div>
 
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-all duration-200 font-semibold text-sm sm:text-base md:text-lg shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSubmitting ? "Sending..." : "Send Message"}
                   </button>
@@ -139,9 +139,9 @@ export default function ContactPage() {
             </div>
 
             {/* Right Section - Illustration and Contact Info */}
-            <div className="p-8 md:p-12 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-gray-700 dark:to-gray-800 flex flex-col">
+            <div className="p-4 sm:p-6 md:p-8 lg:p-12 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-gray-700 dark:to-gray-800 flex flex-col">
               {/* Illustration */}
-              <div className="flex-1 flex items-center justify-center mb-8">
+              <div className="flex-1 flex items-center justify-center mb-6 sm:mb-8">
                 <div className="relative w-full max-w-md">
                   {/* Person Illustration */}
                   <svg
@@ -305,11 +305,11 @@ export default function ContactPage() {
               </div>
 
               {/* Contact Information */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-4 text-gray-700 dark:text-gray-300">
-                  <div className="flex-shrink-0 w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center">
+              <div className="space-y-3 sm:space-y-4">
+                <div className="flex items-center gap-3 sm:gap-4 text-gray-700 dark:text-gray-300">
+                  <div className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 bg-purple-600 rounded-full flex items-center justify-center">
                     <svg
-                      className="w-5 h-5 text-white"
+                      className="w-4 h-4 sm:w-5 sm:h-5 text-white"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -328,13 +328,13 @@ export default function ContactPage() {
                       />
                     </svg>
                   </div>
-                  <span className="text-base font-medium">New Delhi, India</span>
+                  <span className="text-sm sm:text-base font-medium break-words">New Delhi, India</span>
                 </div>
 
-                <div className="flex items-center gap-4 text-gray-700 dark:text-gray-300">
-                  <div className="flex-shrink-0 w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center">
+                <div className="flex items-center gap-3 sm:gap-4 text-gray-700 dark:text-gray-300">
+                  <div className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 bg-purple-600 rounded-full flex items-center justify-center">
                     <svg
-                      className="w-5 h-5 text-white"
+                      className="w-4 h-4 sm:w-5 sm:h-5 text-white"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -347,13 +347,13 @@ export default function ContactPage() {
                       />
                     </svg>
                   </div>
-                  <span className="text-base font-medium">+91 98765 43210</span>
+                  <span className="text-sm sm:text-base font-medium break-all">+91 98765 43210</span>
                 </div>
 
-                <div className="flex items-center gap-4 text-gray-700 dark:text-gray-300">
-                  <div className="flex-shrink-0 w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center">
+                <div className="flex items-center gap-3 sm:gap-4 text-gray-700 dark:text-gray-300">
+                  <div className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 bg-purple-600 rounded-full flex items-center justify-center">
                     <svg
-                      className="w-5 h-5 text-white"
+                      className="w-4 h-4 sm:w-5 sm:h-5 text-white"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -368,7 +368,7 @@ export default function ContactPage() {
                   </div>
                   <a
                     href="mailto:officialpreetithakur@gmail.com"
-                    className="text-base font-medium hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+                    className="text-sm sm:text-base font-medium hover:text-purple-600 dark:hover:text-purple-400 transition-colors break-all"
                   >
                     officialpreetithakur@gmail.com
                   </a>

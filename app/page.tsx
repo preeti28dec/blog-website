@@ -70,26 +70,26 @@ function HomeContent() {
   }, [category]);
 
   return (
-    <div className="container mx-auto px-4 py-12">
+    <div className="container mx-auto px-3 sm:px-4 md:px-6 py-6 sm:py-8 md:py-12">
       <div className="max-w-6xl mx-auto">
         <CategoryFilter
           categories={categories}
           currentCategory={category}
         />
 
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 mt-8">
+        <div className="grid gap-4 sm:gap-6 md:gap-8 sm:grid-cols-2 lg:grid-cols-3 mt-6 sm:mt-8">
           {error ? (
-            <div className="col-span-full text-center py-12">
-              <p className="text-red-500 text-lg">Failed to load posts.</p>
-              <p className="text-gray-500 text-sm mt-2">{error}</p>
+            <div className="col-span-full text-center py-8 sm:py-12">
+              <p className="text-red-500 text-base sm:text-lg">Failed to load posts.</p>
+              <p className="text-gray-500 text-xs sm:text-sm mt-2 px-4">{error}</p>
             </div>
           ) : loading ? (
-            <div className="col-span-full text-center py-12">
-              <p className="text-gray-500 text-lg">Loading...</p>
+            <div className="col-span-full text-center py-8 sm:py-12">
+              <p className="text-gray-500 text-base sm:text-lg">Loading...</p>
             </div>
           ) : posts.length === 0 ? (
-            <div className="col-span-full text-center py-12">
-              <p className="text-gray-500 text-lg">
+            <div className="col-span-full text-center py-8 sm:py-12">
+              <p className="text-gray-500 text-base sm:text-lg">
                 No posts found.
               </p>
             </div>
@@ -101,17 +101,17 @@ function HomeContent() {
                 className="block bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition-all duration-200 border border-gray-200 dark:border-gray-700 cursor-pointer hover:scale-[1.02] hover:border-blue-300 dark:hover:border-blue-600 overflow-hidden"
               >
                 {post.imageUrl ? (
-                  <div className="relative w-full h-48 md:h-56 overflow-hidden bg-gray-200 dark:bg-gray-700">
+                  <div className="relative w-full h-40 sm:h-48 md:h-56 overflow-hidden bg-gray-200 dark:bg-gray-700">
                     <Image
                       src={post.imageUrl}
                       alt={post.title || "Article post image"}
                       fill
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                       className="object-cover transition-transform duration-300 hover:scale-105"
                     />
                   </div>
                 ) : (
-                  <div className="relative w-full h-48 md:h-56 overflow-hidden bg-gradient-to-br from-blue-100 to-purple-100 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center">
+                  <div className="relative w-full h-40 sm:h-48 md:h-56 overflow-hidden bg-gradient-to-br from-blue-100 to-purple-100 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center">
                     <div className="text-center p-4">
                       <svg
                         className="w-16 h-16 mx-auto text-gray-400 dark:text-gray-500"
@@ -132,15 +132,15 @@ function HomeContent() {
                     </div>
                   </div>
                 )}
-                <div className="px-6 pt-4 pb-2">
+                <div className="px-4 sm:px-6 pt-3 sm:pt-4 pb-2">
                   {/* First line: Author and Date */}
-                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2">
                     <span>By</span>
-                    <span className="font-medium text-gray-700 dark:text-gray-300">
+                    <span className="font-medium text-gray-700 dark:text-gray-300 truncate max-w-[120px] sm:max-w-none">
                       {post.creatorName || post.author?.name || post.author?.email || "Unknown"}
                     </span>
-                    <span className="w-1 h-1 rounded-full bg-gray-400 dark:bg-gray-500"></span>
-                    <span>
+                    <span className="w-1 h-1 rounded-full bg-gray-400 dark:bg-gray-500 flex-shrink-0"></span>
+                    <span className="flex-shrink-0">
                       {new Date(post.createdAt).toLocaleDateString("en-GB", {
                         day: "2-digit",
                         month: "2-digit",
@@ -150,7 +150,7 @@ function HomeContent() {
                   </div>
                   
                   {/* Second line: Views, Likes, Comments */}
-                  <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                     <div className="flex items-center gap-1">
                       <svg
                         className="w-4 h-4"
@@ -215,29 +215,29 @@ function HomeContent() {
                     </div>
                   </div>
                 </div>
-                <div className="p-6">
+                <div className="p-4 sm:p-6">
                   {post.category && (
-                    <span className="inline-block px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full mb-3">
+                    <span className="inline-block px-2.5 sm:px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full mb-2 sm:mb-3">
                       {post.category.name}
                     </span>
                   )}
-                  <h2 className="text-2xl font-semibold mb-3 text-gray-900 dark:text-white">
+                  <h2 className="text-lg sm:text-xl md:text-2xl font-semibold mb-2 sm:mb-3 text-gray-900 dark:text-white line-clamp-2">
                     {post.title}
                   </h2>
                   {post.excerpt && (
-                    <p className="text-gray-600 dark:text-gray-400 mb-4 line-clamp-3">
+                    <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-3 sm:mb-4 line-clamp-2 sm:line-clamp-3">
                       {post.excerpt}
                     </p>
                   )}
                   {post.tags && (
-                    <div className="flex flex-wrap gap-2 mb-4">
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4">
                       {post.tags
                         .split(",")
                         .slice(0, 3)
                         .map((tag: string, idx: number) => (
                           <span
                             key={idx}
-                            className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded"
+                            className="px-2 py-0.5 sm:py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded"
                           >
                             #{tag.trim()}
                           </span>
@@ -245,7 +245,7 @@ function HomeContent() {
                     </div>
                   )}
                   <div className="flex items-center justify-end">
-                    <span className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                    <span className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 hover:underline">
                       Read more
                     </span>
                   </div>
@@ -263,8 +263,8 @@ export default function Home() {
   return (
     <Suspense
       fallback={
-        <div className="container mx-auto px-4 py-12">
-          <div className="max-w-6xl mx-auto text-center text-gray-500">
+        <div className="container mx-auto px-3 sm:px-4 md:px-6 py-6 sm:py-8 md:py-12">
+          <div className="max-w-6xl mx-auto text-center text-gray-500 text-sm sm:text-base">
             Loading page...
           </div>
         </div>

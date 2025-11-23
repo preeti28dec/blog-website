@@ -58,14 +58,14 @@ const Navbar = memo(function Navbar() {
   return (
     <nav className="sticky top-0 z-50 bg-gray-100 dark:bg-gray-900 shadow-sm">
       <div className="relative">
-        <div className="relative container mx-auto px-4">
+        <div className="relative sm:container mx-auto sm:px-4 px-1">
         <div className="flex justify-between items-center h-20 gap-3">
           {/* Brand Logo */}
           <Link
             href="/"
             className="group flex items-center gap-3 px-4 transition-colors font-semibold z-10"
           >
-            <span className="relative flex h-16 w-16 items-center justify-center rounded-full text-white ring-2 ring-fuchsia-200/70 dark:ring-fuchsia-500/20">
+            <span className="relative flex sm:h-16 sm:w-16 w-12 h-12 items-center justify-center rounded-full text-white ring-2 ring-fuchsia-200/70 dark:ring-fuchsia-500/20">
               {/* Core glossy gradient */}
             <span
               aria-hidden="true"
@@ -88,7 +88,7 @@ const Navbar = memo(function Navbar() {
                 TSL
               </span>
             </span>
-            <span className="text-2xl font-semibold tracking-wide text-gray-900 dark:text-gray-50">
+            <span className="text-lg sm:text-2xl font-semibold tracking-wide text-gray-900 dark:text-gray-50">
               Toptiersportsledger
             </span>
           </Link>
@@ -154,7 +154,7 @@ const Navbar = memo(function Navbar() {
                 onClick={toggleTheme}
                 disabled={!isReady}
                 aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-                className="w-10 h-10 rounded-full bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-200 shadow-md hover:shadow-lg flex items-center justify-center transition-all duration-200"
+                className="hidden sm:flex w-10 h-10 rounded-full bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-200 shadow-md hover:shadow-lg items-center justify-center transition-all duration-200"
               >
                 <ThemeIcon className="h-5 w-5" />
               </button>

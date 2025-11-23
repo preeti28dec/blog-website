@@ -60,35 +60,35 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-12">
+    <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 md:py-12">
       <div className="max-w-md mx-auto">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
-          <h1 className="text-3xl font-bold mb-6 text-center text-gray-900 dark:text-white">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6 md:p-8">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 text-center text-gray-900 dark:text-white">
             Sign in
           </h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 text-center mb-6">
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 text-center mb-4 sm:mb-6">
             Access the admin dashboard
           </p>
 
           {superAdminExists === false && (
-            <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-              <p className="text-sm text-yellow-800 dark:text-yellow-200 text-center mb-3">
+            <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+              <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-200 text-center mb-2 sm:mb-3">
                 No super admin exists yet. Create one first.
               </p>
               <Link
                 href="/setup"
-                className="block w-full px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-center font-medium"
+                className="block w-full px-3 sm:px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-center text-sm sm:text-base font-medium"
               >
                 Create Super Admin
               </Link>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300"
+                className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-gray-700 dark:text-gray-300"
               >
                 Email
               </label>
@@ -98,7 +98,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="w-full px-3 sm:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm sm:text-base"
                 placeholder="you@example.com"
               />
             </div>
@@ -106,7 +106,7 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300"
+                className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-gray-700 dark:text-gray-300"
               >
                 Password
               </label>
@@ -116,7 +116,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="w-full px-3 sm:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm sm:text-base"
                 placeholder="••••••••"
               />
             </div>
@@ -124,7 +124,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full px-4 py-2.5 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
             >
               {isLoading ? (
                 <>
@@ -156,12 +156,12 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-6 space-y-2 text-center">
+          <div className="mt-4 sm:mt-6 space-y-2 text-center">
             {superAdminExists === false && (
               <div>
                 <Link
                   href="/setup"
-                  className="text-green-600 dark:text-green-400 hover:underline text-sm font-medium"
+                  className="text-green-600 dark:text-green-400 hover:underline text-xs sm:text-sm font-medium"
                 >
                   Need to create a super admin first?
                 </Link>
@@ -170,7 +170,7 @@ export default function LoginPage() {
             <div>
               <Link
                 href="/"
-                className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
+                className="text-blue-600 dark:text-blue-400 hover:underline text-xs sm:text-sm"
               >
                 Back to home
               </Link>

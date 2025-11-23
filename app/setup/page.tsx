@@ -40,28 +40,28 @@ export default function SetupPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-12">
+    <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 md:py-12">
       <div className="max-w-md mx-auto">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
-          <h1 className="text-3xl font-bold mb-6 text-center text-gray-900 dark:text-white">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6 md:p-8">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 text-center text-gray-900 dark:text-white">
             Create Super Admin
           </h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 text-center mb-6">
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 text-center mb-4 sm:mb-6">
             Generate the first super admin account to unlock the dashboard.
           </p>
 
           {credentials ? (
-            <div className="space-y-4">
-              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-                <h3 className="font-semibold text-green-800 dark:text-green-200 mb-2">
+            <div className="space-y-3 sm:space-y-4">
+              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 sm:p-4">
+                <h3 className="font-semibold text-green-800 dark:text-green-200 mb-2 text-sm sm:text-base">
                   ✅ Super Admin Created Successfully!
                 </h3>
-                <div className="space-y-2 text-sm">
+                <div className="space-y-2 text-xs sm:text-sm">
                   <div>
                     <span className="font-medium text-green-700 dark:text-green-300">
                       Email:
                     </span>{" "}
-                    <code className="bg-white dark:bg-gray-800 px-2 py-1 rounded">
+                    <code className="bg-white dark:bg-gray-800 px-2 py-1 rounded break-all">
                       {credentials.email}
                     </code>
                   </div>
@@ -69,29 +69,29 @@ export default function SetupPage() {
                     <span className="font-medium text-green-700 dark:text-green-300">
                       Password:
                     </span>{" "}
-                    <code className="bg-white dark:bg-gray-800 px-2 py-1 rounded">
+                    <code className="bg-white dark:bg-gray-800 px-2 py-1 rounded break-all">
                       {credentials.password}
                     </code>
                   </div>
                 </div>
-                <p className="text-xs text-red-600 dark:text-red-400 mt-3 font-medium">
+                <p className="text-xs text-red-600 dark:text-red-400 mt-2 sm:mt-3 font-medium">
                   ⚠️ Please change the password after first login!
                 </p>
               </div>
 
               <Link
                 href="/login"
-                className="block w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-center font-medium"
+                className="block w-full px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-center text-sm sm:text-base font-medium"
               >
                 Go to Login
               </Link>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <button
                 onClick={handleCreateSuperAdmin}
                 disabled={isCreating}
-                className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
               >
                 {isCreating ? (
                   <>
@@ -125,7 +125,7 @@ export default function SetupPage() {
               <div className="text-center">
                 <Link
                   href="/login"
-                  className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
+                  className="text-blue-600 dark:text-blue-400 hover:underline text-xs sm:text-sm"
                 >
                   Already have an account? Login
                 </Link>
@@ -133,10 +133,10 @@ export default function SetupPage() {
             </div>
           )}
 
-          <div className="mt-6 text-center">
+          <div className="mt-4 sm:mt-6 text-center">
             <Link
               href="/"
-              className="text-gray-600 dark:text-gray-400 hover:underline text-sm"
+              className="text-gray-600 dark:text-gray-400 hover:underline text-xs sm:text-sm"
             >
               ← Back to home
             </Link>

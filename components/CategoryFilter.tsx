@@ -21,10 +21,10 @@ export default function CategoryFilter({
   currentCategory,
 }: CategoryFilterProps) {
   return (
-    <div className="flex flex-wrap gap-3 justify-center mb-8">
+    <div className="flex flex-wrap gap-2 sm:gap-3 justify-center mb-6 sm:mb-8 px-2">
       <Link
         href="/"
-        className={`px-4 py-2 rounded-lg transition-colors ${
+        className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg transition-colors text-xs sm:text-sm font-medium ${
           !currentCategory
             ? "bg-blue-600 text-white"
             : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
@@ -36,13 +36,13 @@ export default function CategoryFilter({
         <Link
           key={category.id}
           href={`/?category=${category.slug}`}
-          className={`px-4 py-2 rounded-lg transition-colors ${
+          className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg transition-colors text-xs sm:text-sm font-medium ${
             currentCategory === category.slug
               ? "bg-blue-600 text-white"
               : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
           }`}
         >
-          {category.name} ({category._count.posts})
+          <span className="whitespace-nowrap">{category.name}</span> <span className="text-xs opacity-75">({category._count.posts})</span>
         </Link>
       ))}
     </div>
