@@ -62,7 +62,7 @@ export default function ContactPage() {
                 Get in touch
               </h1>
               <p className="text-sm sm:text-base md:text-lg text-gray-600 dark:text-gray-400 mb-6 sm:mb-8">
-                Have questions or feedback? Send us a message and we'll get back to you soon.
+                Have questions or feedback? Send us a message and we&apos;ll get back to you soon.
               </p>
 
               {submitted ? (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useForm } from "react-hook-form";
@@ -188,7 +188,7 @@ const saveEditToken = (slug: string, token: string) => {
       router.push("/");
       return;
     }
-  }, [session, status, router]);
+  }, [session, status, router, t]);
 
   const {
     register,
@@ -200,7 +200,7 @@ const saveEditToken = (slug: string, token: string) => {
     resolver: zodResolver(postSchema),
   });
 
-  const fetchPosts = async () => {
+  const fetchPosts = useCallback(async () => {
     try {
       setPostsError(null);
       const response = await fetch("/api/posts");
@@ -213,9 +213,9 @@ const saveEditToken = (slug: string, token: string) => {
         error instanceof Error ? error.message : t("admin.failedToSave")
       );
     }
-  };
+  }, [t]);
 
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
       const response = await fetch("/api/categories");
       const data = await fetchJsonOrThrow(response);
@@ -224,7 +224,7 @@ const saveEditToken = (slug: string, token: string) => {
       console.error("Error fetching categories:", error);
       setCategories([]);
     }
-  };
+  }, []);
 
   // Load posts and categories on mount
   useEffect(() => {
@@ -237,7 +237,7 @@ const saveEditToken = (slug: string, token: string) => {
       }
     };
     load();
-  }, []);
+  }, [fetchPosts, fetchCategories]);
 
   const handleImageUpload = async (file: File) => {
     if (!file) return;
