@@ -169,6 +169,8 @@ const saveEditToken = (slug: string, token: string) => {
   const [createdEditToken, setCreatedEditToken] = useState<string | null>(null);
   const [createdPostSlug, setCreatedPostSlug] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Check authentication and role
@@ -327,9 +329,13 @@ const saveEditToken = (slug: string, token: string) => {
         : "/api/posts";
       const method = editingPost ? "PUT" : "POST";
 
+      // Convert tags array to comma-separated string
+      const tagsString = tags.join(",");
+
       // Include imageUrl in the data - prioritize state over form data
       const postData: any = {
         ...data,
+        tags: tagsString,
       };
       
       // Handle imageUrl - use state value if available, otherwise form data, or null
@@ -371,6 +377,8 @@ const saveEditToken = (slug: string, token: string) => {
         setDragActive(false);
         setShowForm(false);
         setEditingPost(null);
+        setTags([]);
+        setTagInput("");
         fetchPosts();
         
         // Show success toast
@@ -402,6 +410,17 @@ const saveEditToken = (slug: string, token: string) => {
     setValue("imageUrl", post.imageUrl || "");
     setValue("creatorName", post.creatorName || "");
     setImageUrl(post.imageUrl || "");
+    // Parse tags from comma-separated string to array
+    if (post.tags) {
+      const parsedTags = post.tags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter((tag) => tag.length > 0);
+      setTags(parsedTags);
+    } else {
+      setTags([]);
+    }
+    setTagInput("");
     setShowForm(true);
   };
 
@@ -526,6 +545,8 @@ const saveEditToken = (slug: string, token: string) => {
                 setImageUrl("");
                 setDragActive(false);
                 setShowCategoryForm(false);
+                setTags([]);
+                setTagInput("");
               }}
               className="px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
             >
@@ -646,12 +667,63 @@ const saveEditToken = (slug: string, token: string) => {
                 <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
                   {t("admin.tags")}
                 </label>
-                <input
-                  type="text"
-                  {...register("tags")}
-                  placeholder={t("admin.tagsPlaceholder")}
-                  className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-                />
+                <div className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent min-h-[42px] flex flex-wrap gap-2 items-center">
+                  {tags.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full"
+                    >
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newTags = tags.filter((_, i) => i !== index);
+                          setTags(newTags);
+                        }}
+                        className="hover:bg-blue-200 dark:hover:bg-blue-800 rounded-full p-0.5 transition-colors"
+                        aria-label={`Remove ${tag} tag`}
+                      >
+                        <svg
+                          className="w-3 h-3"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </button>
+                    </span>
+                  ))}
+                  <input
+                    type="text"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === ",") {
+                        e.preventDefault();
+                        const trimmedInput = tagInput.trim();
+                        if (trimmedInput && !tags.includes(trimmedInput)) {
+                          setTags([...tags, trimmedInput]);
+                          setTagInput("");
+                        } else if (trimmedInput && tags.includes(trimmedInput)) {
+                          setTagInput("");
+                        }
+                      } else if (e.key === "Backspace" && tagInput === "" && tags.length > 0) {
+                        setTags(tags.slice(0, -1));
+                      }
+                    }}
+                    placeholder={tags.length === 0 ? t("admin.tagsPlaceholder") : ""}
+                    className="flex-1 min-w-[120px] border-0 outline-none bg-transparent text-sm sm:text-base"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Press Enter or comma to add a tag
+                </p>
               </div>
 
               <div>

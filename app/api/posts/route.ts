@@ -53,6 +53,16 @@ export async function GET(request: NextRequest) {
             slug: true,
           },
         },
+        _count: {
+          select: {
+            comments: {
+              where: {
+                approved: true,
+              },
+            },
+            likes: true,
+          },
+        },
       },
       orderBy: {
         createdAt: "desc",
