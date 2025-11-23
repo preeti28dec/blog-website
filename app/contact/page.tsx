@@ -370,7 +370,8 @@ export default function ContactPage() {
                     href="mailto:officialpreetithakur@gmail.com"
                     className="text-sm sm:text-base font-medium hover:text-purple-600 dark:hover:text-purple-400 transition-colors break-all"
                   >
-                    officialpreetithakur@gmail.com
+                    kashishsharmawork21@gmail.com
+
                   </a>
                 </div>
               </div>
