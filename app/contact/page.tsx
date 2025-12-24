@@ -347,7 +347,7 @@ export default function ContactPage() {
                       />
                     </svg>
                   </div>
-                  <span className="text-sm sm:text-base font-medium break-all">+91 98765 43210</span>
+                  <span className="text-sm sm:text-base font-medium break-all">+91 9871986022</span>
                 </div>
 
                 <div className="flex items-center gap-3 sm:gap-4 text-gray-700 dark:text-gray-300">

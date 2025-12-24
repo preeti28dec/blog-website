@@ -4,12 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { PROFILE_KEY } from "@/lib/profile";
 import ProfilePhotoControls from "@/components/ProfilePhotoControls";
 
-const baseStats = [
-  { key: "posts", label: "Posts", helper: "Feature stories + analysis" },
-  { key: "comments", label: "Comments", helper: "Community-first moderation" },
-  { key: "coachingYears", label: "Years Coaching", helper: "Athlete mentorship" },
-];
-
 const specialties = [
   "Sports Marketing & PR",
   "Event and Facility Management",
@@ -24,19 +18,6 @@ export const metadata: Metadata = {
 };
 
 export const revalidate = 60;
-
-async function getAboutStats() {
-  const [publishedPosts, approvedComments] = await prisma.$transaction([
-    prisma.post.count({ where: { published: true } }),
-    prisma.comment.count({ where: { approved: true } }),
-  ]);
-
-  return {
-    posts: publishedPosts,
-    comments: approvedComments,
-    coachingYears: "10+",
-  };
-}
 
 async function getProfileData() {
   try {
@@ -58,23 +39,8 @@ async function getProfileData() {
 }
 
 export default async function AboutPage() {
-  const [{ posts, comments, coachingYears }, profileData] = await Promise.all([
-    getAboutStats(),
-    getProfileData(),
-  ]);
+  const profileData = await getProfileData();
   const portraitSrc = profileData.displayImage;
-  const stats = baseStats.map((stat) => {
-    if (stat.key === "posts") {
-      return { ...stat, value: posts.toString() };
-    }
-    if (stat.key === "comments") {
-      return { ...stat, value: comments.toString() };
-    }
-    if (stat.key === "coachingYears") {
-      return { ...stat, value: coachingYears };
-    }
-    return { ...stat, value: "-" };
-  });
   const hasPortrait = Boolean(portraitSrc);
   const useUnoptimized = portraitSrc?.startsWith("data:") ?? false;
 
@@ -155,24 +121,6 @@ export default async function AboutPage() {
             impact.
           </p>
 
-          <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-3">
-            {stats.map((stat) => (
-              <div
-                key={stat.label}
-                className="rounded-xl sm:rounded-2xl border border-gray-200 bg-gray-50 px-4 sm:px-5 py-3 sm:py-4 text-center dark:border-gray-700 dark:bg-gray-800"
-              >
-                <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-                  {stat.value}
-                </p>
-                <p className="mt-1 text-xs sm:text-sm font-semibold uppercase tracking-wide text-gray-500">
-                  {stat.label}
-                </p>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  {stat.helper}
-                </p>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
@@ -223,5 +171,3 @@ export default async function AboutPage() {
     </div>
   );
 }
-
-

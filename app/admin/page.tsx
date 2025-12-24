@@ -9,6 +9,7 @@ import { z } from "zod";
 import toast from "react-hot-toast";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { FaEdit, FaTrash, FaEye, FaEyeSlash } from "react-icons/fa";
 
 const ADMIN_TEXT = {
   titleRequired: "Title is required.",
@@ -26,6 +27,15 @@ const ADMIN_TEXT = {
   postDeleted: "Post deleted.",
   failedToDelete: "Failed to delete post.",
   failedToCreateCategory: "Failed to create category.",
+  failedToUpdateCategory: "Failed to update category.",
+  failedToDeleteCategory: "Failed to delete category.",
+  categoryCreated: "Category created successfully!",
+  categoryUpdated: "Category updated successfully!",
+  categoryDeleted: "Category deleted successfully!",
+  deleteCategoryConfirm: "Are you sure you want to delete this category?",
+  categoryHasPosts: "Cannot delete category with existing posts.",
+  showCategories: "Show Categories",
+  hideCategories: "Hide Categories",
   loading: "Loading...",
   saveEditToken: "Save this edit token so you can edit the post later.",
   editTokenSaved: "The token was also stored locally for convenience.",
@@ -35,8 +45,12 @@ const ADMIN_TEXT = {
   newCategory: "New Category",
   newPost: "New Post",
   createCategory: "Create Category",
+  editCategory: "Edit Category",
+  updateCategory: "Update Category",
   categoryName: "Category name",
   create: "Create",
+  update: "Update",
+  postsCount: "Posts",
   editPost: "Edit Post",
   createNewPost: "Create New Post",
   postTitle: "Post title",
@@ -139,6 +153,9 @@ interface Category {
   id: string;
   name: string;
   slug: string;
+  _count?: {
+    posts: number;
+  };
 }
 
 // Helper functions to manage edit tokens in localStorage
@@ -161,6 +178,8 @@ const saveEditToken = (slug: string, token: string) => {
   const [showForm, setShowForm] = useState(false);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
+  const [showCategoriesSection, setShowCategoriesSection] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [newCategory, setNewCategory] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -171,6 +190,17 @@ const saveEditToken = (slug: string, token: string) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
+  const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null);
+  const [deletingPostSlug, setDeletingPostSlug] = useState<string | null>(null);
+  const [updatingCategory, setUpdatingCategory] = useState(false);
+  const [creatingCategory, setCreatingCategory] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteModalConfig, setDeleteModalConfig] = useState<{
+    type: 'post' | 'category';
+    id: string;
+    name: string;
+    onConfirm: () => void;
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Check authentication and role
@@ -371,6 +401,13 @@ const saveEditToken = (slug: string, token: string) => {
           setCreatedPostSlug(result.slug);
         }
         
+        // Update UI immediately without refresh
+        if (editingPost) {
+          setPosts(posts.map(p => p.id === editingPost.id ? result : p));
+        } else {
+          setPosts([result, ...posts]);
+        }
+        
         reset();
         setImageUrl("");
         setValue("imageUrl", "");
@@ -379,7 +416,6 @@ const saveEditToken = (slug: string, token: string) => {
         setEditingPost(null);
         setTags([]);
         setTagInput("");
-        fetchPosts();
         
         // Show success toast
         if (editingPost) {
@@ -424,34 +460,50 @@ const saveEditToken = (slug: string, token: string) => {
     setShowForm(true);
   };
 
-  const handleDelete = async (slug: string) => {
-    if (!confirm(t("admin.deleteConfirm"))) return;
+  const handleDelete = (slug: string) => {
+    const post = posts.find(p => p.slug === slug);
+    if (!post) return;
+    
+    setDeleteModalConfig({
+      type: 'post',
+      id: slug,
+      name: post.title,
+      onConfirm: async () => {
+        setShowDeleteModal(false);
+        setDeletingPostSlug(slug);
+        try {
+          const response = await fetch(`/api/posts/${slug}`, {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
 
-    try {
-      const response = await fetch(`/api/posts/${slug}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (response.ok) {
-        fetchPosts();
-        toast.success(t("admin.postDeleted"));
-      } else {
-        const error = await response.json();
-        alert(`${t("admin.failedToDelete")}: ${error.error || "Unknown error"}`);
+          if (response.ok) {
+            // Update UI immediately without refresh
+            setPosts(posts.filter(post => post.slug !== slug));
+            toast.success(t("admin.postDeleted"));
+          } else {
+            const error = await response.json();
+            toast.error(`${t("admin.failedToDelete")}: ${error.error || "Unknown error"}`);
+          }
+        } catch (error) {
+          console.error("Error deleting post:", error);
+          toast.error(t("admin.failedToDelete"));
+        } finally {
+          setDeletingPostSlug(null);
+          setDeleteModalConfig(null);
+        }
       }
-    } catch (error) {
-      console.error("Error deleting post:", error);
-      alert(t("admin.failedToDelete"));
-    }
+    });
+    setShowDeleteModal(true);
   };
 
   const handleCreateCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCategory.trim()) return;
 
+    setCreatingCategory(true);
     try {
       const response = await fetch("/api/categories", {
         method: "POST",
@@ -462,16 +514,111 @@ const saveEditToken = (slug: string, token: string) => {
       });
 
       if (response.ok) {
+        const newCat = await response.json();
+        // Update UI immediately without refresh
+        setCategories([...categories, { ...newCat, _count: { posts: 0 } }]);
         setNewCategory("");
         setShowCategoryForm(false);
-        fetchCategories();
+        setEditingCategory(null);
+        toast.success(t("admin.categoryCreated"));
       } else {
-        alert(t("admin.failedToCreateCategory"));
+        const error = await response.json();
+        toast.error(error.error || t("admin.failedToCreateCategory"));
       }
     } catch (error) {
       console.error("Error creating category:", error);
-      alert(t("admin.failedToCreateCategory"));
+      toast.error(t("admin.failedToCreateCategory"));
+    } finally {
+      setCreatingCategory(false);
     }
+  };
+
+  const handleUpdateCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCategory.trim() || !editingCategory) return;
+
+    setUpdatingCategory(true);
+    try {
+      const response = await fetch(`/api/categories/${editingCategory.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: newCategory }),
+      });
+
+      if (response.ok) {
+        const updatedCat = await response.json();
+        // Update UI immediately without refresh
+        setCategories(categories.map(cat => 
+          cat.id === editingCategory.id 
+            ? { ...updatedCat, _count: cat._count }
+            : cat
+        ));
+        setNewCategory("");
+        setShowCategoryForm(false);
+        setEditingCategory(null);
+        toast.success(t("admin.categoryUpdated"));
+      } else {
+        const error = await response.json();
+        toast.error(error.error || t("admin.failedToUpdateCategory"));
+      }
+    } catch (error) {
+      console.error("Error updating category:", error);
+      toast.error(t("admin.failedToUpdateCategory"));
+    } finally {
+      setUpdatingCategory(false);
+    }
+  };
+
+  const handleEditCategory = (category: Category) => {
+    setEditingCategory(category);
+    setNewCategory(category.name);
+    setShowCategoryForm(true);
+    setShowForm(false);
+  };
+
+  const handleDeleteCategory = (id: string) => {
+    const category = categories.find(cat => cat.id === id);
+    if (!category) return;
+    
+    setDeleteModalConfig({
+      type: 'category',
+      id: id,
+      name: category.name,
+      onConfirm: async () => {
+        setShowDeleteModal(false);
+        setDeletingCategoryId(id);
+        try {
+          const response = await fetch(`/api/categories/${id}`, {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+
+          if (response.ok) {
+            // Update UI immediately without refresh
+            setCategories(categories.filter(cat => cat.id !== id));
+            toast.success(t("admin.categoryDeleted"));
+          } else {
+            const error = await response.json();
+            if (error.error && error.error.includes("existing posts")) {
+              toast.error(t("admin.categoryHasPosts"));
+            } else {
+              toast.error(error.error || t("admin.failedToDeleteCategory"));
+            }
+          }
+        } catch (error) {
+          console.error("Error deleting category:", error);
+          toast.error(t("admin.failedToDeleteCategory"));
+        } finally {
+          setDeletingCategoryId(null);
+          setDeleteModalConfig(null);
+        }
+      }
+    });
+    setShowDeleteModal(true);
   };
 
   // Show loading while checking auth
@@ -529,9 +676,34 @@ const saveEditToken = (slug: string, token: string) => {
           <h1 className="text-2xl sm:text-3xl font-bold">{t("admin.title")}</h1>
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
             <button
+              onClick={() => setShowCategoriesSection(!showCategoriesSection)}
+              className={`px-3 sm:px-4 py-2 text-white rounded-lg transition-colors text-sm sm:text-base flex items-center gap-2 ${
+                showCategoriesSection
+                  ? "bg-gray-600 hover:bg-gray-700"
+                  : "bg-purple-600 hover:bg-purple-700"
+              }`}
+            >
+              {showCategoriesSection ? (
+                <>
+                  <FaEyeSlash className="w-4 h-4" />
+                  {t("admin.hideCategories")}
+                </>
+              ) : (
+                <>
+                  <FaEye className="w-4 h-4" />
+                  {t("admin.showCategories")}
+                </>
+              )}
+            </button>
+          
+            <button
               onClick={() => {
                 setShowCategoryForm(!showCategoryForm);
                 setShowForm(false);
+                if (!showCategoryForm) {
+                  setEditingCategory(null);
+                  setNewCategory("");
+                }
               }}
               className="px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm sm:text-base"
             >
@@ -558,10 +730,12 @@ const saveEditToken = (slug: string, token: string) => {
         
         {showCategoryForm && (
           <form
-            onSubmit={handleCreateCategory}
+            onSubmit={editingCategory ? handleUpdateCategory : handleCreateCategory}
             className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-md mb-6 sm:mb-8"
           >
-            <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">{t("admin.createCategory")}</h2>
+            <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">
+              {editingCategory ? t("admin.editCategory") : t("admin.createCategory")}
+            </h2>
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <input
                 type="text"
@@ -570,12 +744,42 @@ const saveEditToken = (slug: string, token: string) => {
                 placeholder={t("admin.categoryName")}
                 className="flex-1 px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                 required
+                disabled={updatingCategory || creatingCategory}
               />
               <button
                 type="submit"
-                className="px-4 sm:px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm sm:text-base"
+                disabled={updatingCategory || creatingCategory}
+                className="px-4 sm:px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {t("admin.create")}
+                {(updatingCategory || creatingCategory) && (
+                  <svg
+                    className="animate-spin h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                )}
+                {updatingCategory
+                  ? t("admin.updating")
+                  : creatingCategory
+                  ? t("admin.creating")
+                  : editingCategory
+                  ? t("admin.update")
+                  : t("admin.create")}
               </button>
             </div>
           </form>
@@ -898,102 +1102,263 @@ const saveEditToken = (slug: string, token: string) => {
           </form>
         )}
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px]">
-              <thead className="bg-gray-50 dark:bg-gray-900">
-                <tr>
-                  <th className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t("admin.tableTitle")}
-                  </th>
-                  <th className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t("admin.tableCategory")}
-                  </th>
-                  <th className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t("admin.tableStatus")}
-                  </th>
-                  <th className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t("admin.tableDate")}
-                  </th>
-                  <th className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t("admin.tableActions")}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {postsError ? (
-                <tr>
-                  <td colSpan={5} className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-center">
-                    <p className="text-red-500 text-sm sm:text-base">{t("admin.failedToLoadPosts")}</p>
-                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-                      {postsError}
-                    </p>
-                  </td>
-                </tr>
-              ) : posts.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-center text-gray-500 text-sm sm:text-base">
-                    {t("admin.noPostsYet")}
-                  </td>
-                </tr>
-              ) : (
-                posts.map((post) => (
-                  <tr key={post.id}>
-                    <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
-                      <Link
-                        href={`/posts/${post.slug || post.id}`}
-                        className="text-blue-600 dark:text-blue-400 hover:underline font-medium cursor-pointer text-xs sm:text-sm break-words"
-                      >
-                        {post.title}
-                      </Link>
-                    </td>
-                    <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
-                      {post.category ? (
-                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded">
-                          {post.category.name}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </td>
-                    <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
-                      <span
-                        className={`px-2 py-1 text-xs rounded-full ${
-                          post.published
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}
-                      >
-                        {post.published ? t("admin.statusPublished") : t("admin.statusDraft")}
-                      </span>
-                    </td>
-                    <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-500">
-                      {new Date(post.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
-                      <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
-                        <button
-                          onClick={() => handleEdit(post)}
-                          className="text-blue-600 hover:text-blue-800 text-xs sm:text-sm text-left sm:text-center"
-                        >
-                          {t("admin.edit")}
-                        </button>
-                        <button
-                          onClick={() => handleDelete(post.slug)}
-                          className="text-red-600 hover:text-red-800 text-xs sm:text-sm text-left sm:text-center"
-                        >
-                          {t("admin.delete")}
-                        </button>
-                      </div>
+        {/* Categories Management Section */}
+        <div className="mb-8 sm:mb-12">
+          {showCategoriesSection && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[640px]">
+                <thead className="bg-gray-50 dark:bg-gray-900">
+                  <tr>
+                    <th className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t("admin.categoryName")}
+                    </th>
+                    <th className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t("admin.postsCount")}
+                    </th>
+                    <th className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t("admin.tableActions")}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {categories.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-center text-gray-500 text-sm sm:text-base">
+                        No categories yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    categories.map((category) => (
+                      <tr key={category.id}>
+                        <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+                          <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs sm:text-sm rounded">
+                            {category.name}
+                          </span>
+                        </td>
+                        <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-500">
+                          {category._count?.posts || 0}
+                        </td>
+                        <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+                          <div className="flex flex-col sm:flex-row gap-2">
+                            <button
+                              onClick={() => handleEditCategory(category)}
+                              className="p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                              title={t("admin.edit")}
+                            >
+                              <FaEdit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteCategory(category.id)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                }
+                              }}
+                              disabled={deletingCategoryId === category.id}
+                              className="p-2 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                              title={t("admin.delete")}
+                            >
+                              {deletingCategoryId === category.id ? (
+                                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                              ) : (
+                                <FaTrash className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          )}
+        </div>
+
+        {/* Posts Management Section */}
+        <div>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[640px]">
+                <thead className="bg-gray-50 dark:bg-gray-900">
+                  <tr>
+                    <th className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t("admin.tableTitle")}
+                    </th>
+                    <th className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t("admin.tableCategory")}
+                    </th>
+                    <th className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t("admin.tableStatus")}
+                    </th>
+                    <th className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t("admin.tableDate")}
+                    </th>
+                    <th className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t("admin.tableActions")}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                {postsError ? (
+                  <tr>
+                    <td colSpan={5} className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-center">
+                      <p className="text-red-500 text-sm sm:text-base">{t("admin.failedToLoadPosts")}</p>
+                      <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        {postsError}
+                      </p>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-            </table>
+                ) : posts.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-center text-gray-500 text-sm sm:text-base">
+                      {t("admin.noPostsYet")}
+                    </td>
+                  </tr>
+                ) : (
+                  posts.map((post) => (
+                    <tr key={post.id}>
+                      <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+                        <Link
+                          href={`/posts/${post.slug || post.id}`}
+                          className="text-blue-600 dark:text-blue-400 hover:underline font-medium cursor-pointer text-xs sm:text-sm break-words"
+                        >
+                          {post.title}
+                        </Link>
+                      </td>
+                      <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+                        {post.category ? (
+                          <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded">
+                            {post.category.name}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                      <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+                        <span
+                          className={`px-2 py-1 text-xs rounded-full ${
+                            post.published
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {post.published ? t("admin.statusPublished") : t("admin.statusDraft")}
+                        </span>
+                      </td>
+                      <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-500">
+                        {new Date(post.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <button
+                            onClick={() => handleEdit(post)}
+                            className="p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center"
+                            title={t("admin.edit")}
+                          >
+                            <FaEdit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(post.slug)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              }
+                            }}
+                            disabled={deletingPostSlug === post.slug}
+                            className="p-2 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                            title={t("admin.delete")}
+                          >
+                            {deletingPostSlug === post.slug ? (
+                              <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                            ) : (
+                              <FaTrash className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && deleteModalConfig && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowDeleteModal(false);
+              setDeleteModalConfig(null);
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setShowDeleteModal(false);
+              setDeleteModalConfig(null);
+            }
+          }}
+        >
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              {deleteModalConfig.type === 'post' ? t("admin.deleteConfirm") : t("admin.deleteCategoryConfirm")}
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+              {deleteModalConfig.type === 'post' 
+                ? `Are you sure you want to delete the post "${deleteModalConfig.name}"? This action cannot be undone.`
+                : `Are you sure you want to delete the category "${deleteModalConfig.name}"? This action cannot be undone.`}
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteModalConfig(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    setShowDeleteModal(false);
+                    setDeleteModalConfig(null);
+                  }
+                }}
+                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                type="button"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={deleteModalConfig.onConfirm}
+                onKeyDown={(e) => {
+                  // Prevent Enter key from triggering delete
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }
+                }}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                type="button"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

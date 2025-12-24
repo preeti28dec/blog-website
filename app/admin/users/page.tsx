@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import Link from "next/link";
+import { FaEdit, FaTrash } from "react-icons/fa";
 
 interface User {
   id: string;
@@ -25,6 +26,13 @@ export default function UsersManagementPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteModalConfig, setDeleteModalConfig] = useState<{
+    userId: string;
+    userName: string;
+    onConfirm: () => void;
+  } | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -93,11 +101,13 @@ export default function UsersManagementPage() {
         });
 
         if (response.ok) {
+          const updatedUser = await response.json();
+          // Update UI immediately without refresh
+          setUsers(users.map(u => u.id === editingUser.id ? { ...updatedUser, _count: u._count } : u));
           toast.success("User updated successfully!");
           setShowForm(false);
           setEditingUser(null);
           resetForm();
-          fetchUsers();
         } else {
           const error = await response.json();
           toast.error(error.error || "Failed to update user");
@@ -118,10 +128,12 @@ export default function UsersManagementPage() {
         });
 
         if (response.ok) {
+          const newUser = await response.json();
+          // Update UI immediately without refresh
+          setUsers([...users, { ...newUser, _count: { posts: 0 } }]);
           toast.success("User created successfully!");
           setShowForm(false);
           resetForm();
-          fetchUsers();
         } else {
           const error = await response.json();
           toast.error(error.error || "Failed to create user");
@@ -144,25 +156,39 @@ export default function UsersManagementPage() {
     setShowForm(true);
   };
 
-  const handleDelete = async (userId: string) => {
-    if (!confirm("Are you sure you want to delete this user?")) return;
+  const handleDelete = (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    if (!user) return;
+    
+    setDeleteModalConfig({
+      userId: userId,
+      userName: user.name || user.email,
+      onConfirm: async () => {
+        setShowDeleteModal(false);
+        setDeletingUserId(userId);
+        try {
+          const response = await fetch(`/api/users/${userId}`, {
+            method: "DELETE",
+          });
 
-    try {
-      const response = await fetch(`/api/users/${userId}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        toast.success("User deleted successfully!");
-        fetchUsers();
-      } else {
-        const error = await response.json();
-        toast.error(error.error || "Failed to delete user");
+          if (response.ok) {
+            // Update UI immediately without refresh
+            setUsers(users.filter(u => u.id !== userId));
+            toast.success("User deleted successfully!");
+          } else {
+            const error = await response.json();
+            toast.error(error.error || "Failed to delete user");
+          }
+        } catch (error) {
+          console.error("Error deleting user:", error);
+          toast.error("Failed to delete user");
+        } finally {
+          setDeletingUserId(null);
+          setDeleteModalConfig(null);
+        }
       }
-    } catch (error) {
-      console.error("Error deleting user:", error);
-      toast.error("Failed to delete user");
-    }
+    });
+    setShowDeleteModal(true);
   };
 
   const resetForm = () => {
@@ -363,18 +389,34 @@ export default function UsersManagementPage() {
                         {new Date(user.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
-                        <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                           <button
                             onClick={() => handleEdit(user)}
-                            className="text-blue-600 hover:text-blue-800 text-xs sm:text-sm text-left sm:text-center"
+                            className="p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center"
+                            title="Edit"
                           >
-                            Edit
+                            <FaEdit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDelete(user.id)}
-                            className="text-red-600 hover:text-red-800 text-xs sm:text-sm text-left sm:text-center"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              }
+                            }}
+                            disabled={deletingUserId === user.id}
+                            className="p-2 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Delete"
                           >
-                            Delete
+                            {deletingUserId === user.id ? (
+                              <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                            ) : (
+                              <FaTrash className="w-4 h-4" />
+                            )}
                           </button>
                         </div>
                       </td>
@@ -386,6 +428,67 @@ export default function UsersManagementPage() {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && deleteModalConfig && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowDeleteModal(false);
+              setDeleteModalConfig(null);
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setShowDeleteModal(false);
+              setDeleteModalConfig(null);
+            }
+          }}
+        >
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Delete User
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+              Are you sure you want to delete the user &quot;{deleteModalConfig.userName}&quot;? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteModalConfig(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    setShowDeleteModal(false);
+                    setDeleteModalConfig(null);
+                  }
+                }}
+                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                type="button"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={deleteModalConfig.onConfirm}
+                onKeyDown={(e) => {
+                  // Prevent Enter key from triggering delete
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }
+                }}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                type="button"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
