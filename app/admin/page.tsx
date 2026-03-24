@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import toast from "react-hot-toast";
@@ -71,7 +71,7 @@ const ADMIN_TEXT = {
   changeImageHint: "Replace or remove the current image above.",
   clickToUpload: "Click to upload",
   dragAndDrop: "or drag and drop",
-  imageFormat: "PNG, JPG, GIF up to 5MB.",
+  imageFormat: "PNG, JPG, GIF, WEBP, BMP, SVG up to 10MB. - You can upload multiple images.",
   published: "Published",
   updating: "Updating...",
   creating: "Creating...",
@@ -124,15 +124,31 @@ export default function AdminPage() {
   const t = translateAdminText;
   
   const postSchema = z.object({
-    title: z.string().min(1, t("admin.titleRequired")),
-    content: z.string().min(1, t("admin.contentRequired")),
+    title: z.string().min(1, "Title is required"),
+    content: z.string().min(1, "Content is required"),
     excerpt: z.string().optional(),
     published: z.boolean().default(false),
     categoryId: z.string().optional(),
     tags: z.string().optional(),
     imageUrl: z.string().nullable().optional(),
+    imageUrls: z.array(z.string()).optional(),
+    images: z.array(z.object({
+      url: z.string(),
+      caption: z.string().optional(),
+      alignment: z.enum(['left', 'right', 'center', 'full']).optional(),
+      isFeatured: z.boolean().optional(),
+      source: z.string().optional(),
+    })).optional(),
     creatorName: z.string().optional(),
   });
+
+interface ImageMetadata {
+  url: string;
+  caption?: string;
+  alignment?: 'left' | 'right' | 'center' | 'full';
+  isFeatured?: boolean;
+  source?: string;
+}
 
 interface Post {
   id: string;
@@ -143,6 +159,8 @@ interface Post {
   published: boolean;
   tags: string;
   imageUrl: string | null;
+  imageUrls?: string[];
+  images?: ImageMetadata[];
   category: { id: string; name: string; slug: string } | null;
   createdAt: string;
   editToken?: string;
@@ -182,9 +200,12 @@ const saveEditToken = (slug: string, token: string) => {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [newCategory, setNewCategory] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [images, setImages] = useState<ImageMetadata[]>([]);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [uploadingFileName, setUploadingFileName] = useState("");
+  const [contentValue, setContentValue] = useState("");
   const [createdEditToken, setCreatedEditToken] = useState<string | null>(null);
   const [createdPostSlug, setCreatedPostSlug] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -226,6 +247,7 @@ const saveEditToken = (slug: string, token: string) => {
     formState: { errors },
     reset,
     setValue,
+    control,
   } = useForm({
     resolver: zodResolver(postSchema),
   });
@@ -272,14 +294,21 @@ const saveEditToken = (slug: string, token: string) => {
   const handleImageUpload = async (file: File) => {
     if (!file) return;
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      alert(t("admin.imageTypeError"));
-      return;
+    // More lenient validation - check both MIME type and file extension
+    const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/svg+xml'];
+    const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'];
+    const fileName = file.name.toLowerCase();
+    const hasValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
+    const hasValidMimeType = file.type && (file.type.startsWith('image/') || validImageTypes.includes(file.type.toLowerCase()));
+
+    // Allow if either MIME type or extension is valid
+    if (!hasValidMimeType && !hasValidExtension) {
+      // Still try to upload - let the server handle it
+      console.warn('File type may not be standard image format, attempting upload anyway:', file.type, file.name);
     }
 
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024;
+    // Validate file size (max 10MB - increased limit)
+    const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
       alert(t("admin.imageSizeError"));
       return;
@@ -302,9 +331,20 @@ const saveEditToken = (slug: string, token: string) => {
       if (response.ok) {
         const data = await response.json();
         console.log('Image uploaded successfully:', data.url);
-        setImageUrl(data.url);
-        setValue('imageUrl', data.url, { shouldValidate: true });
-        // Clear file input so user can upload a different image
+        // Add to images array with default metadata
+        const newImage: ImageMetadata = {
+          url: data.url,
+          caption: '',
+          alignment: 'left',
+          isFeatured: images.length === 0, // First image is featured by default
+          source: ''
+        };
+        setImages(prev => [...prev, newImage]);
+        setValue('images', [...images, newImage], { shouldValidate: true });
+        // Also update imageUrls for backward compatibility
+        setImageUrls(prev => [...prev, data.url]);
+        setValue('imageUrls', [...imageUrls, data.url], { shouldValidate: true });
+        // Clear file input so user can upload more images
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
@@ -325,9 +365,12 @@ const saveEditToken = (slug: string, token: string) => {
   };
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      handleImageUpload(file);
+    const files = e.target.files;
+    if (files) {
+      // Handle multiple files
+      Array.from(files).forEach(file => {
+        handleImageUpload(file);
+      });
     }
   };
 
@@ -346,14 +389,34 @@ const saveEditToken = (slug: string, token: string) => {
     e.stopPropagation();
     setDragActive(false);
     
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleImageUpload(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      // Handle multiple files
+      Array.from(e.dataTransfer.files).forEach(file => {
+        handleImageUpload(file);
+      });
     }
   };
+
 
   const onSubmit = async (data: any) => {
     setIsSubmitting(true);
     try {
+      // Validate required fields before submission
+      const titleValue = (data.title || "").trim();
+      const contentValueFinal = (contentValue || data.content || "").trim();
+      
+      if (!titleValue || titleValue.length === 0) {
+        toast.error("Title is required");
+        setIsSubmitting(false);
+        return;
+      }
+      
+      if (!contentValueFinal || contentValueFinal.length === 0) {
+        toast.error("Content is required");
+        setIsSubmitting(false);
+        return;
+      }
+
       const url = editingPost
         ? `/api/posts/${editingPost.slug}`
         : "/api/posts";
@@ -365,11 +428,30 @@ const saveEditToken = (slug: string, token: string) => {
       // Include imageUrl in the data - prioritize state over form data
       const postData: any = {
         ...data,
+        title: titleValue,
         tags: tagsString,
+        content: contentValueFinal,
       };
       
-      // Handle imageUrl - use state value if available, otherwise form data, or null
-      if (imageUrl && imageUrl.trim() !== "") {
+      // Handle images array with metadata - prioritize state over form data
+      if (images.length > 0) {
+        postData.images = images;
+        // Also update imageUrls for backward compatibility
+        postData.imageUrls = images.map(img => img.url);
+      } else if (data.images && Array.isArray(data.images) && data.images.length > 0) {
+        postData.images = data.images;
+        postData.imageUrls = data.images.map((img: ImageMetadata) => img.url);
+      } else {
+        postData.images = [];
+        postData.imageUrls = [];
+      }
+
+      // Handle legacy imageUrl for backward compatibility (use first featured image or first image)
+      const featuredImage = images.find((img) => img.isFeatured) || images[0] || null;
+      const firstImage = featuredImage;
+      if (firstImage) {
+        postData.imageUrl = firstImage.url;
+      } else if (imageUrl && imageUrl.trim() !== "") {
         postData.imageUrl = imageUrl.trim();
       } else if (data.imageUrl && typeof data.imageUrl === 'string' && data.imageUrl.trim() !== "") {
         postData.imageUrl = data.imageUrl.trim();
@@ -410,7 +492,13 @@ const saveEditToken = (slug: string, token: string) => {
         
         reset();
         setImageUrl("");
+        setImageUrls([]);
+        setImages([]);
+        setContentValue("");
         setValue("imageUrl", "");
+        setValue("imageUrls", []);
+        setValue("images", []);
+        setValue("content", "");
         setDragActive(false);
         setShowForm(false);
         setEditingPost(null);
@@ -424,8 +512,28 @@ const saveEditToken = (slug: string, token: string) => {
           toast.success(t("admin.postCreated"));
         }
       } else {
-        const error = await response.json();
-        toast.error(error.error || t("admin.failedToSave"));
+        let errorData: any;
+        try {
+          errorData = await response.json();
+        } catch (parseError) {
+          errorData = { error: `HTTP ${response.status}: ${response.statusText || 'Unknown error occurred'}` };
+        }
+        
+        // Extract the most user-friendly error message
+        const errorMessage = errorData.error || errorData.details || errorData.message || t("admin.failedToSave");
+        console.error('Post creation error:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData
+        });
+        
+        // Show error toast with the message
+        toast.error(errorMessage);
+        
+        // Log full error details in development
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Full error response:', errorData);
+        }
       }
     } catch (error) {
       console.error("Error saving post:", error);
@@ -438,7 +546,9 @@ const saveEditToken = (slug: string, token: string) => {
   const handleEdit = (post: Post) => {
     setEditingPost(post);
     setValue("title", post.title);
-    setValue("content", post.content || "");
+    const postContent = post.content || "";
+    setContentValue(postContent);
+    setValue("content", postContent);
     setValue("excerpt", post.excerpt || "");
     setValue("published", post.published);
     setValue("categoryId", post.category?.id || "");
@@ -446,6 +556,31 @@ const saveEditToken = (slug: string, token: string) => {
     setValue("imageUrl", post.imageUrl || "");
     setValue("creatorName", post.creatorName || "");
     setImageUrl(post.imageUrl || "");
+    // Handle imageUrls array - check if post has imageUrls field
+    const postImageUrls = (post as any).imageUrls || [];
+    setImageUrls(Array.isArray(postImageUrls) ? postImageUrls : []);
+    setValue("imageUrls", postImageUrls);
+    
+    // Handle images with metadata
+    if (post.images && Array.isArray(post.images)) {
+      setImages(post.images as ImageMetadata[]);
+      setValue("images", post.images);
+    } else if (postImageUrls.length > 0) {
+      // Convert legacy imageUrls to images format
+      const convertedImages: ImageMetadata[] = postImageUrls.map((url: string, index: number) => ({
+        url,
+        caption: '',
+        alignment: index === 0 ? 'full' : 'left',
+        isFeatured: index === 0,
+        source: ''
+      }));
+      setImages(convertedImages);
+      setValue("images", convertedImages);
+    } else {
+      setImages([]);
+      setValue("images", []);
+    }
+    
     // Parse tags from comma-separated string to array
     if (post.tags) {
       const parsedTags = post.tags
@@ -715,6 +850,9 @@ const saveEditToken = (slug: string, token: string) => {
                 setEditingPost(null);
                 reset();
                 setImageUrl("");
+                setImageUrls([]);
+                setImages([]);
+                setContentValue("");
                 setDragActive(false);
                 setShowCategoryForm(false);
                 setTags([]);
@@ -743,7 +881,6 @@ const saveEditToken = (slug: string, token: string) => {
                 onChange={(e) => setNewCategory(e.target.value)}
                 placeholder={t("admin.categoryName")}
                 className="flex-1 px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-                required
                 disabled={updatingCategory || creatingCategory}
               />
               <button
@@ -812,11 +949,31 @@ const saveEditToken = (slug: string, token: string) => {
                 <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
                   {t("admin.content")}
                 </label>
-                <textarea
-                  {...register("content")}
-                  rows={8}
-                  className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-                />
+                <div className="relative">
+                  <Controller
+                    name="content"
+                    control={control}
+                    render={({ field }) => (
+                      <textarea
+                        {...field}
+                        value={contentValue}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setContentValue(value);
+                          field.onChange(value);
+                        }}
+                        rows={16}
+                        className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base font-mono"
+                        placeholder="Start writing your article here..."
+                      />
+                    )}
+                  />
+                  {contentValue && (
+                    <div className="absolute bottom-2 right-2 text-xs text-gray-400 bg-white dark:bg-gray-800 px-2 py-1 rounded">
+                      {contentValue.length} characters
+                    </div>
+                  )}
+                </div>
                 {errors.content && (
                   <p className="text-red-500 text-xs sm:text-sm mt-1">
                     {errors.content.message as string}
@@ -931,16 +1088,225 @@ const saveEditToken = (slug: string, token: string) => {
               </div>
 
               <div>
-                <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
-                  {t("admin.featuredImage")}
-                </label>
+                <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                  <label className="block text-xs sm:text-sm font-medium">
+                    {t("admin.featuredImage")} {images.length > 0 && `(${images.length} uploaded)`}
+                  </label>
+                  {images.length > 0 && (
+                    <span className="text-xs text-green-600 dark:text-green-400 font-medium">
+                      ✓ {images.filter(img => img.isFeatured).length > 0 ? 'Hero image set' : 'Set hero image below'}
+                    </span>
+                  )}
+                </div>
+                
+                {/* Featured Image Preview */}
+                {images.length > 0 && (() => {
+                  const featuredImage = images.find(img => img.isFeatured) || images[0];
+                  if (featuredImage && featuredImage.url) {
+                    // Check if URL is actually an iframe embed code or HTML
+                    const isIframeCode = featuredImage.url.trim().startsWith('<iframe') || 
+                                       featuredImage.url.trim().startsWith('<embed') ||
+                                       featuredImage.url.trim().includes('</iframe>');
+                    
+                    if (isIframeCode) {
+                      // If it's iframe code, show a warning and the code
+                      return (
+                        <div className="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                          <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-2 font-medium">
+                            ⚠️ Featured image appears to be iframe/embed code. Please use a direct image URL instead.
+                          </p>
+                          <div className="bg-white dark:bg-gray-800 p-3 rounded border border-yellow-300 dark:border-yellow-700">
+                            <code className="text-xs text-gray-700 dark:text-gray-300 break-all">
+                              {featuredImage.url.substring(0, 200)}{featuredImage.url.length > 200 ? '...' : ''}
+                            </code>
+                          </div>
+                        </div>
+                      );
+                    }
+                    
+                    // Show image preview
+                    return (
+                      <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                        <p className="text-xs sm:text-sm font-medium text-blue-900 dark:text-blue-200 mb-3">
+                          Current Hero/Featured Image Preview:
+                        </p>
+                        <div className="relative w-full h-48 sm:h-64 md:h-80 rounded-lg overflow-hidden border border-blue-300 dark:border-blue-700 shadow-md">
+                          <Image
+                            src={featuredImage.url}
+                            alt="Featured image preview"
+                            fill
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 70vw"
+                            className="object-cover"
+                            unoptimized
+                          />
+                          {featuredImage.caption && (
+                            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white text-xs sm:text-sm p-2 text-center">
+                              {featuredImage.caption}
+                            </div>
+                          )}
+                        </div>
+                        {featuredImage.url && (
+                          <p className="text-xs text-blue-700 dark:text-blue-300 mt-2 break-all">
+                            URL: {featuredImage.url}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+                
+                {/* Image Gallery with Metadata Editing */}
+                {images.length > 0 && (
+                  <div className="mb-4 space-y-4">
+                    {images.map((image, index) => (
+                      <div key={index} className="border border-gray-300 dark:border-gray-600 rounded-lg p-3 sm:p-4 bg-gray-50 dark:bg-gray-900/50">
+                        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                          {/* Image Preview */}
+                          <div className="relative group flex-shrink-0">
+                            <div className="relative w-full sm:w-32 h-32 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600 shadow-sm">
+                              <Image
+                                src={image.url}
+                                alt={`Image ${index + 1}`}
+                                fill
+                                unoptimized
+                                className="object-cover"
+                              />
+                              {image.isFeatured && (
+                                <div className="absolute top-1 left-1 bg-yellow-500 text-white text-xs px-2 py-1 rounded font-semibold">
+                                  Featured
+                                </div>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newImages = images.filter((_, i) => i !== index);
+                                setImages(newImages);
+                                setImageUrls(newImages.map(img => img.url));
+                                setValue("images", newImages);
+                                setValue("imageUrls", newImages.map(img => img.url));
+                              }}
+                              className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1.5 shadow-lg hover:bg-red-700 transition-colors"
+                              aria-label="Remove image"
+                            >
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M6 18L18 6M6 6l12 12"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                          
+                          {/* Image Metadata */}
+                          <div className="flex-1 space-y-2 sm:space-y-3">
+                            {/* Caption */}
+                            <div>
+                              <label className="block text-xs font-medium mb-1 text-gray-700 dark:text-gray-300">
+                                Caption
+                              </label>
+                              <input
+                                type="text"
+                                value={image.caption || ''}
+                                onChange={(e) => {
+                                  const newImages = [...images];
+                                  newImages[index] = { ...newImages[index], caption: e.target.value };
+                                  setImages(newImages);
+                                  setValue("images", newImages);
+                                }}
+                                placeholder="Enter image caption..."
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white dark:bg-gray-800"
+                              />
+                            </div>
+                            
+                            {/* Source */}
+                            <div>
+                              <label className="block text-xs font-medium mb-1 text-gray-700 dark:text-gray-300">
+                                Source
+                              </label>
+                              <input
+                                type="text"
+                                value={image.source || ''}
+                                onChange={(e) => {
+                                  const newImages = [...images];
+                                  newImages[index] = { ...newImages[index], source: e.target.value };
+                                  setImages(newImages);
+                                  setValue("images", newImages);
+                                }}
+                                placeholder="Enter image source (e.g., Thebridge)"
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white dark:bg-gray-800"
+                              />
+                            </div>
+                            
+                            {/* Alignment and Featured */}
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-xs font-medium mb-1 text-gray-700 dark:text-gray-300">
+                                  Alignment
+                                </label>
+                                <select
+                                  value={image.alignment || 'left'}
+                                  onChange={(e) => {
+                                    const newImages = [...images];
+                                    newImages[index] = { ...newImages[index], alignment: e.target.value as 'left' | 'right' | 'center' | 'full' };
+                                    setImages(newImages);
+                                    setValue("images", newImages);
+                                  }}
+                                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white dark:bg-gray-800"
+                                >
+                                  <option value="left">Left</option>
+                                  <option value="right">Right</option>
+                                  <option value="center">Center</option>
+                                  <option value="full">Full Width</option>
+                                </select>
+                              </div>
+                              <div className="flex items-end">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={image.isFeatured || false}
+                                    onChange={(e) => {
+                                      const newImages = images.map((img, i) => ({
+                                        ...img,
+                                        isFeatured: i === index ? e.target.checked : false // Only one featured
+                                      }));
+                                      setImages(newImages);
+                                      setValue("images", newImages);
+                                      if (e.target.checked) {
+                                        toast.success('Hero image set! This will appear at the top of your article.');
+                                      }
+                                    }}
+                                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                  />
+                                  <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                                    Hero Image (Top)
+                                  </span>
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Upload Area */}
                 <div
                   onDragEnter={handleDrag}
                   onDragLeave={handleDrag}
                   onDragOver={handleDrag}
                   onDrop={handleDrop}
                   onClick={() => {
-                    if (!imageUrl && !uploadingImage && fileInputRef.current) {
+                    if (!uploadingImage && fileInputRef.current) {
                       fileInputRef.current.click();
                     }
                   }}
@@ -950,7 +1316,7 @@ const saveEditToken = (slug: string, token: string) => {
                       : dragActive
                       ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
                       : "border-gray-300 dark:border-gray-600"
-                  } ${uploadingImage ? "pointer-events-none" : imageUrl ? "" : "cursor-pointer hover:border-blue-400"}`}
+                  } ${uploadingImage ? "pointer-events-none" : "cursor-pointer hover:border-blue-400"}`}
                 >
                   {uploadingImage ? (
                     <div className="flex flex-col items-center justify-center py-8">
@@ -965,50 +1331,6 @@ const saveEditToken = (slug: string, token: string) => {
                         </p>
                       )}
                       <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">{t("admin.pleaseWait")}</p>
-                    </div>
-                  ) : imageUrl ? (
-                    <div className="space-y-4">
-                      <div className="relative inline-block mx-auto">
-                        <Image
-                          src={imageUrl}
-                          alt="Featured image preview"
-                          width={800}
-                          height={600}
-                          unoptimized
-                          className="max-w-full h-auto max-h-80 mx-auto rounded-lg border border-gray-300 dark:border-gray-600 shadow-md object-contain"
-                        />
-                      </div>
-                      <div className="flex gap-2 justify-center">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (fileInputRef.current) {
-                              fileInputRef.current.click();
-                            }
-                          }}
-                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                        >
-                          {t("admin.changeImage")}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setImageUrl("");
-                            setValue("imageUrl", "");
-                            if (fileInputRef.current) {
-                              fileInputRef.current.value = "";
-                            }
-                          }}
-                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
-                        >
-                          {t("admin.remove")}
-                        </button>
-                      </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {t("admin.changeImageHint")}
-                      </p>
                     </div>
                   ) : (
                     <div className="space-y-2">
@@ -1037,6 +1359,9 @@ const saveEditToken = (slug: string, token: string) => {
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         {t("admin.imageFormat")}
                       </p>
+                      <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">
+                        💡 You can upload multiple images at once
+                      </p>
                     </div>
                   )}
                 </div>
@@ -1044,12 +1369,17 @@ const saveEditToken = (slug: string, token: string) => {
                   ref={fileInputRef}
                   type="file"
                   accept="image/*"
+                  multiple
                   onChange={handleFileInputChange}
                   className="hidden"
                 />
                 <input
                   type="hidden"
                   {...register("imageUrl")}
+                />
+                <input
+                  type="hidden"
+                  {...register("imageUrls")}
                 />
               </div>
 

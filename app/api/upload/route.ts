@@ -24,19 +24,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
+    // More lenient validation - check both MIME type and file extension
+    const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/svg+xml'];
+    const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'];
+    const fileName = file.name.toLowerCase();
+    const hasValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
+    const hasValidMimeType = file.type && (file.type.startsWith('image/') || validImageTypes.includes(file.type.toLowerCase()));
+
+    // Allow if either MIME type or extension is valid, or if no type is set (let it through)
+    if (!hasValidMimeType && !hasValidExtension && file.type) {
+      // If we have a type but it's not an image, reject it
       return NextResponse.json(
-        { error: 'File must be an image' },
+        { error: 'File must be an image (PNG, JPG, GIF, WEBP, BMP, or SVG)' },
         { status: 400 }
       );
     }
 
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    // Validate file size (max 10MB - increased limit)
+    const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
       return NextResponse.json(
-        { error: 'File size must be less than 5MB' },
+        { error: 'File size must be less than 10MB' },
         { status: 400 }
       );
     }

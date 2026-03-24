@@ -100,17 +100,23 @@ function HomeContent() {
                 href={`/posts/${post.slug || post.id}`}
                 className="block bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition-all duration-200 border border-gray-200 dark:border-gray-700 cursor-pointer hover:scale-[1.02] hover:border-blue-300 dark:hover:border-blue-600 overflow-hidden"
               >
-                {post.imageUrl ? (
-                  <div className="relative w-full h-40 sm:h-48 md:h-56 overflow-hidden bg-gray-200 dark:bg-gray-700">
-                    <Image
-                      src={post.imageUrl}
-                      alt={post.title || "Article post image"}
-                      fill
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                      className="object-cover transition-transform duration-300 hover:scale-105"
-                    />
-                  </div>
-                ) : (
+                {(() => {
+                  // Check for multiple images first, then fall back to single imageUrl
+                  const firstImage = (post.imageUrls && Array.isArray(post.imageUrls) && post.imageUrls.length > 0)
+                    ? post.imageUrls[0]
+                    : post.imageUrl;
+
+                  return firstImage ? (
+                    <div className="relative w-full h-40 sm:h-48 md:h-56 overflow-hidden bg-gray-200 dark:bg-gray-700">
+                      <Image
+                        src={firstImage}
+                        alt={post.title || "Article post image"}
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        className="object-cover transition-transform duration-300 hover:scale-105"
+                      />
+                    </div>
+                  ) : (
                   <div className="relative w-full h-40 sm:h-48 md:h-56 overflow-hidden bg-gradient-to-br from-blue-100 to-purple-100 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center">
                     <div className="text-center p-4">
                       <svg
@@ -131,7 +137,8 @@ function HomeContent() {
                       </p>
                     </div>
                   </div>
-                )}
+                  );
+                })()}
                 <div className="px-4 sm:px-6 pt-3 sm:pt-4 pb-2">
                   {/* First line: Author and Date */}
                   <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2">

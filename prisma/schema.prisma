@@ -34,26 +34,28 @@ model Category {
 }
 
 model Post {
-  id         String     @id @default(auto()) @map("_id") @db.ObjectId
-  title      String
-  slug       String     @unique
-  content    String
-  excerpt    String?
-  published  Boolean    @default(false)
-  authorId   String?    @db.ObjectId
-  author     User?      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  creatorName String?  // For public posts without authentication
-  editToken  String?   @unique // Token to allow editing of public posts
-  categoryId String?    @db.ObjectId
-  category   Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  tags       String     @default("") // Comma-separated tags
-  imageUrl   String?    // Cloudinary image URL
-  comments   Comment[]
-  likes      Like[]
-  postViews  View[]
-  views      Int        @default(0)
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  slug        String    @unique
+  content     String
+  excerpt     String?   @default("")
+  published   Boolean   @default(false)
+  authorId    String?   @db.ObjectId
+  author      User?     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  creatorName String? // For public posts without authentication
+  editToken   String?   @unique // Token to allow editing of public posts
+  categoryId  String?   @db.ObjectId
+  category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  tags        String    @default("") // Tags string
+  imageUrl    String? // Main featured image URL (can be base64 or Cloudinary URL)
+  imageUrls   String[]  @default([]) // Array of image URLs for multiple images
+  images      Json? // Array of image objects with metadata: [{url, caption, alignment, isFeatured, source}]
+  comments    Comment[]
+  likes       Like[]
+  postViews   View[]
+  views       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([published])
   @@index([categoryId])
@@ -61,15 +63,15 @@ model Post {
 }
 
 model Comment {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  content    String
-  authorName String
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  content     String
+  authorName  String
   authorEmail String
-  postId     String   @db.ObjectId
-  post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  approved   Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  postId      String   @db.ObjectId
+  post        Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  approved    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([postId])
   @@index([approved])
@@ -80,8 +82,8 @@ model Like {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   postId    String   @db.ObjectId
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  userIp    String?  // Track by IP for public users
-  userEmail String?  // Track by email if logged in
+  userIp    String? // Track by IP for public users
+  userEmail String? // Track by email if logged in
   createdAt DateTime @default(now())
 
   @@index([postId])
@@ -94,9 +96,9 @@ model View {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   postId    String   @db.ObjectId
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  userIp    String?  // Track by IP for public users
-  userEmail String?  // Track by email if logged in
-  clientId  String?  // Track by clientId for cases where IP is unknown
+  userIp    String? // Track by IP for public users
+  userEmail String? // Track by email if logged in
+  clientId  String? // Track by clientId for cases where IP is unknown
   createdAt DateTime @default(now())
 
   @@index([postId])
@@ -115,4 +117,3 @@ model Profile {
 
   @@map("profiles")
 }
-

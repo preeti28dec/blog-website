@@ -3,13 +3,21 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
 const updatePostSchema = z.object({
-  title: z.string().min(1).optional(),
-  content: z.string().min(1).optional(),
+  title: z.string().optional(),
+  content: z.string().optional(),
   excerpt: z.string().optional(),
   published: z.boolean().optional(),
   categoryId: z.string().optional(),
   tags: z.string().optional(),
   imageUrl: z.string().nullable().optional(),
+  imageUrls: z.array(z.string()).optional(),
+  images: z.array(z.object({
+    url: z.string(),
+    caption: z.string().optional(),
+    alignment: z.enum(['left', 'right', 'center', 'full']).optional(),
+    isFeatured: z.boolean().optional(),
+    source: z.string().optional(),
+  })).optional(),
   editToken: z.string().optional(), // No longer required, kept for backward compatibility
 });
 
@@ -101,6 +109,42 @@ export async function PUT(
         updateData.imageUrl = validatedData.imageUrl.trim();
       } else {
         updateData.imageUrl = null;
+      }
+    }
+
+    // Handle images array with metadata
+    if (validatedData.images !== undefined) {
+      if (Array.isArray(validatedData.images) && validatedData.images.length > 0) {
+        // Ensure images array is properly formatted for Prisma JSON field
+        updateData.images = validatedData.images.map((img: any) => ({
+          url: img.url,
+          caption: img.caption || '',
+          alignment: img.alignment || 'left',
+          isFeatured: img.isFeatured || false,
+          source: img.source || '',
+        }));
+        // Also update imageUrls for backward compatibility
+        updateData.imageUrls = validatedData.images.map((img: any) => img.url);
+      } else {
+        updateData.images = [];
+        updateData.imageUrls = [];
+      }
+    } else if (validatedData.imageUrls !== undefined) {
+      // Fallback to imageUrls if images array not provided
+      if (Array.isArray(validatedData.imageUrls)) {
+        const filteredUrls = validatedData.imageUrls
+          .filter((url): url is string => typeof url === 'string' && url.trim() !== '');
+        updateData.imageUrls = filteredUrls;
+      } else {
+        updateData.imageUrls = [];
+      }
+    }
+
+    // Set imageUrl from featured image if images array is provided
+    if (validatedData.images && Array.isArray(validatedData.images) && validatedData.images.length > 0) {
+      const featuredImage = validatedData.images.find((img: any) => img.isFeatured) || validatedData.images[0];
+      if (featuredImage) {
+        updateData.imageUrl = featuredImage.url;
       }
     }
 
