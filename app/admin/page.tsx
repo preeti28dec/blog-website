@@ -1145,11 +1145,11 @@ const saveEditToken = (slug: string, token: string) => {
                             </div>
                           )}
                         </div>
-                        {featuredImage.url && (
+                        {/* {featuredImage.url && (
                           <p className="text-xs text-blue-700 dark:text-blue-300 mt-2 break-all">
                             URL: {featuredImage.url}
                           </p>
-                        )}
+                        )} */}
                       </div>
                     );
                   }
